@@ -17,6 +17,10 @@ func (m *mockRoutes) AddHandlerFunc(pattern, method string, handlerFunc ContextH
 	if !ok {
 		m.routes[pattern] = make(map[string]ContextHandlerFunc)
 	}
+	_, dup := m.routes[pattern][method]
+	if dup {
+		panic(fmt.Sprintf("duplicate route handler method: \"%s %s\"", method, pattern))
+	}
 	m.routes[pattern][method] = handlerFunc
 }
 
@@ -527,4 +531,128 @@ func TestNewRouterInitialisesEncoderEngineWithDefaultMediaType(t *testing.T) {
 	if got != want {
 		t.Errorf("EncoderEngine.DefaultMediaType = %q, want %q", got, want)
 	}
+}
+
+//
+
+// func TestGetAddsHandlerToRoutes(t *testing.T) {
+// 	want := "testFunc"
+// 	rtr := Router{}
+// 	rtr.routes = newMockRoutes()
+// 	rtr.Get("/test", testFunc)
+// 	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+// 	if !ok {
+// 		t.Errorf("Handler not added")
+// 	}
+// 	h := handlers["GET"]
+// 	got := extractFnName(h)
+// 	if got != want {
+// 		t.Errorf("Handler function = %q, want %q", got, want)
+// 	}
+// }
+//
+
+func TestRegisterModulesWithEmptyModuleRegistersNoNewRoutes(t *testing.T) {
+	want := 0
+	r := Router{}
+	r.routes = newMockRoutes()
+
+	r.RegisterModules([]Registerer{
+		emptyTestModule{},
+	})
+	got := len(r.routes.(*mockRoutes).routes)
+	if got != want {
+		t.Errorf("Route count = %d, want %d", got, want)
+	}
+}
+
+func TestRegisterModulesWithSingleModuleRegistersRoutes(t *testing.T) {
+	want := 1
+	r := Router{}
+	r.routes = newMockRoutes()
+
+	r.RegisterModules([]Registerer{
+		singleRouteTestModule{},
+	})
+	s, _, _ := r.routes.HandlerFuncs("/single")
+	got := len(s)
+	if got != want {
+		t.Errorf("Route count = %d, want %d", got, want)
+	}
+}
+
+func TestRegisterModulesWithMultipleModulesRegistersRoutes(t *testing.T) {
+	want := 3
+	r := Router{}
+	r.routes = newMockRoutes()
+
+	r.RegisterModules([]Registerer{
+		singleRouteTestModule{},
+		multiRouteTestModule{},
+	})
+	s, _, _ := r.routes.HandlerFuncs("/single")
+	m, _, _ := r.routes.HandlerFuncs("/multi")
+	got := len(s) + len(m)
+
+	if got != want {
+		t.Errorf("Route count = %d, want %d", got, want)
+	}
+}
+
+func TestRegisterModulesDoesNotAffectExisingRegistrations(t *testing.T) {
+	want := 3
+	r := Router{}
+	r.routes = newMockRoutes()
+	r.Get("/single", testFunc)
+
+	r.RegisterModules([]Registerer{
+		multiRouteTestModule{},
+	})
+
+	s, _, _ := r.routes.HandlerFuncs("/single")
+	m, _, _ := r.routes.HandlerFuncs("/multi")
+	got := len(s) + len(m)
+
+	if got != want {
+		t.Errorf("Route count = %d, want %d", got, want)
+	}
+}
+
+func TestRegisterModulesPanicsWhenAttemptingDuplicateRoute(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	r := Router{}
+	r.routes = newMockRoutes()
+
+	r.RegisterModules([]Registerer{
+		singleRouteTestModule{},
+		duplicateRouteTestModule{},
+	})
+}
+
+type emptyTestModule struct{}
+
+func (t emptyTestModule) Register(r *Router) {}
+
+type singleRouteTestModule struct{}
+
+func (t singleRouteTestModule) Register(r *Router) {
+	r.Get("/single", testFunc)
+}
+
+type multiRouteTestModule struct{}
+
+func (t multiRouteTestModule) Register(r *Router) {
+	r.Put("/multi", testFunc2)
+	r.Post("/multi", testFunc3)
+}
+
+type duplicateRouteTestModule struct{}
+
+func (t duplicateRouteTestModule) Register(r *Router) {
+	r.Get("/single", testFunc)
 }

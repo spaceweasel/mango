@@ -185,3 +185,18 @@ func (r *Router) AddPreHook(hook HookFunc) {
 func (r *Router) AddPostHook(hook HookFunc) {
 	r.postHooks = append(r.postHooks, hook)
 }
+
+// Registerer is the interface that handler function modules need to
+// implement.
+type Registerer interface {
+	Register(r *Router)
+}
+
+// RegisterModules registers the route handler functions in each of
+// the modules.
+// If a specific pattern-method handlerFunc already exists, RegisterModules panics.
+func (r *Router) RegisterModules(modules []Registerer) {
+	for _, m := range modules {
+		m.Register(r)
+	}
+}
