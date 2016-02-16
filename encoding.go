@@ -34,7 +34,8 @@ type EncoderEngine interface {
 	GetEncoder(w io.Writer, ct string) (Encoder, error)
 	DefaultMediaType() string
 	SetDefaultMediaType(mt string)
-	// TODO: add methods for adding other Encoders and Decoders
+	AddEncoderFunc(ct string, fn EncoderFunc) error
+	AddDecoderFunc(ct string, fn DecoderFunc) error
 }
 
 // EncoderFunc is a function that returns an Encoder pre-injected
@@ -49,6 +50,28 @@ type encoderEngine struct {
 	Encoders         map[string]EncoderFunc
 	Decoders         map[string]DecoderFunc
 	defaultMediaType string
+}
+
+// AddEncoderFunc adds an EncoderFunc fn for the specified content-type ct.
+// If an EncoderFunc pre-exists for content-type ct, then fn will not be added
+// and AddEncoderFunc will return an error. Successful addition return nil.
+func (e *encoderEngine) AddEncoderFunc(ct string, fn EncoderFunc) error {
+	if _, ok := e.Encoders[ct]; ok {
+		return fmt.Errorf("conflicts with existing encoder for content-type: %v", ct)
+	}
+	e.Encoders[ct] = fn
+	return nil
+}
+
+// AddDecoderFunc adds a DecoderFunc fn for the specified content-type ct.
+// If a DecoderFunc pre-exists for content-type ct, then fn will not be added
+// and AddDecoderFunc will return an error. Successful addition return nil.
+func (e *encoderEngine) AddDecoderFunc(ct string, fn DecoderFunc) error {
+	if _, ok := e.Decoders[ct]; ok {
+		return fmt.Errorf("conflicts with existing decoder for content-type: %v", ct)
+	}
+	e.Decoders[ct] = fn
+	return nil
 }
 
 // GetDecoder returns a Decoder for the specified content-type (ct). The

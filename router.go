@@ -200,3 +200,17 @@ func (r *Router) RegisterModules(modules []Registerer) {
 		m.Register(r)
 	}
 }
+
+// AddEncoderFunc adds an EncoderFunc fn for the specified content-type ct.
+// If an EncoderFunc pre-exists for content-type ct, then fn will not be added
+// and AddEncoderFunc will return an error. Successful addition return nil.
+func (r *Router) AddEncoderFunc(ct string, fn EncoderFunc) error {
+	return r.encoderEngine.AddEncoderFunc(ct, fn)
+}
+
+// AddDecoderFunc adds a DecoderFunc fn for the specified content-type ct.
+// If a DecoderFunc pre-exists for content-type ct, then fn will not be added
+// and AddDecoderFunc will return an error. Successful addition return nil.
+func (r *Router) AddDecoderFunc(ct string, fn DecoderFunc) error {
+	return r.encoderEngine.AddDecoderFunc(ct, fn)
+}

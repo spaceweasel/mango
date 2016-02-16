@@ -96,7 +96,7 @@ func TestGetEncoderReturnsEncoderFuncWithWriter(t *testing.T) {
 	enc.Encode("to be encoded")
 	got := w.String()
 	if got != want {
-		t.Errorf("GetEncoder() = %q, want %q", got, want)
+		t.Errorf("Encoded string = %q, want %q", got, want)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestGetDecoderReturnsDecoderFuncWithReader(t *testing.T) {
 	dec.Decode(decoded)
 	got := *decoded
 	if got != want {
-		t.Errorf("GetDecoder() = %q, want %q", got, want)
+		t.Errorf("Decode() = %q, want %q", got, want)
 	}
 }
 
@@ -201,6 +201,24 @@ func (e *mockEncoderEngine) DefaultMediaType() string {
 
 func (e *mockEncoderEngine) SetDefaultMediaType(mt string) {
 	e.defaultMediaType = mt
+}
+
+func (e *mockEncoderEngine) AddEncoderFunc(ct string, fn EncoderFunc) error {
+	s := ct + "-" + extractFnName(fn)
+	e.EncoderRequests = append(e.EncoderRequests, s)
+	if ct == "error/error" {
+		return fmt.Errorf(ct)
+	}
+	return nil
+}
+
+func (e *mockEncoderEngine) AddDecoderFunc(ct string, fn DecoderFunc) error {
+	s := ct + "-" + extractFnName(fn)
+	e.DecoderRequests = append(e.DecoderRequests, s)
+	if ct == "error/error" {
+		return fmt.Errorf(ct)
+	}
+	return nil
 }
 
 // test standard encoders
@@ -304,5 +322,100 @@ func TestSetDefaultMediaType(t *testing.T) {
 	got := ee.defaultMediaType
 	if got != want {
 		t.Errorf("Default media type = %q, want %q", got, want)
+	}
+}
+
+func TestAddEncoderFuncAddsFunctionWithoutError(t *testing.T) {
+	want := error(nil)
+	fn := func(io.Writer) Encoder {
+		return nil
+	}
+	ee := newEncoderEngine()
+	err := ee.AddEncoderFunc("mango/test", fn)
+	got := err
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
+func TestAddEncoderFuncReturnsErrorWhenConflictingContentType(t *testing.T) {
+	want := "conflicts with existing encoder for content-type: application/json"
+	fn := func(io.Writer) Encoder {
+		return nil
+	}
+	ee := newEncoderEngine()
+	err := ee.AddEncoderFunc("application/json", fn)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %v, want %v", got, want)
+	}
+}
+
+func TestAddEncoderFuncAddsToInternalMap(t *testing.T) {
+	want := "to be encoded"
+	fn := func(w io.Writer) Encoder {
+		return NewMockEncoder(w)
+	}
+	ee := newEncoderEngine()
+	ee.AddEncoderFunc("mango/json", fn)
+	w := new(bytes.Buffer)
+	enc, err := ee.GetEncoder(w, "mango/json")
+	if err != nil {
+		t.Errorf("Encoder = <nil>, want mockEncoder")
+		return
+	}
+	enc.Encode("to be encoded")
+	got := w.String()
+	if got != want {
+		t.Errorf("Encoded string = %q, want %q", got, want)
+	}
+}
+
+func TestAddDecoderFuncAddsFunctionWithoutError(t *testing.T) {
+	want := error(nil)
+	fn := func(io.ReadCloser) Decoder {
+		return nil
+	}
+	ee := newEncoderEngine()
+	err := ee.AddDecoderFunc("mango/test", fn)
+	got := err
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
+func TestAddDecoderFuncReturnsErrorWhenConflictingContentType(t *testing.T) {
+	want := "conflicts with existing decoder for content-type: application/json"
+	fn := func(io.ReadCloser) Decoder {
+		return nil
+	}
+	ee := newEncoderEngine()
+	err := ee.AddDecoderFunc("application/json", fn)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %v, want %v", got, want)
+	}
+}
+
+func TestAddDecoderFuncAddsToInternalMap(t *testing.T) {
+	want := "to be decoded"
+	fn := func(r io.ReadCloser) Decoder {
+		return NewMockDecoder(r)
+	}
+	ee := newEncoderEngine()
+	ee.AddDecoderFunc("mango/json", fn)
+
+	r := nopCloser{bytes.NewBufferString("to be decoded")}
+
+	dec, err := ee.GetDecoder(r, "mango/json")
+	if err != nil {
+		t.Errorf("Decoder = <nil>, want mockDecoder")
+		return
+	}
+	decoded := new(string)
+	dec.Decode(decoded)
+	got := *decoded
+	if got != want {
+		t.Errorf("Encoded string = %q, want %q", got, want)
 	}
 }

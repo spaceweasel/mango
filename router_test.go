@@ -2,6 +2,7 @@ package mango
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -632,6 +633,80 @@ func TestRegisterModulesPanicsWhenAttemptingDuplicateRoute(t *testing.T) {
 		singleRouteTestModule{},
 		duplicateRouteTestModule{},
 	})
+}
+
+func encFunc(io.Writer) Encoder {
+	return nil
+}
+
+func TestAddEncoderFuncForwardsRequestToEncoderEngine(t *testing.T) {
+	want := "mango/test-encFunc"
+	r := Router{}
+	ee := mockEncoderEngine{}
+	r.encoderEngine = &ee
+
+	r.AddEncoderFunc("mango/test", encFunc)
+	if len(ee.EncoderRequests) == 0 {
+		t.Errorf("Requests = 0, want 1")
+		return
+	}
+	got := ee.EncoderRequests[0]
+	if got != want {
+		t.Errorf("Recorded request = %q, want %q", got, want)
+	}
+}
+
+func TestAddEncoderFuncCapturesEncoderEngineError(t *testing.T) {
+	want := "error/error"
+	r := Router{}
+	r.encoderEngine = &mockEncoderEngine{}
+
+	err := r.AddEncoderFunc("error/error", encFunc)
+	if err == nil {
+		t.Errorf("Error = <nil>, want %q", want)
+		return
+	}
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
+func decFunc(io.ReadCloser) Decoder {
+	return nil
+}
+
+func TestAddDecoderFuncForwardsRequestToEncoderEngine(t *testing.T) {
+	want := "mango/test-decFunc"
+	r := Router{}
+	ee := mockEncoderEngine{}
+	r.encoderEngine = &ee
+
+	r.AddDecoderFunc("mango/test", decFunc)
+	if len(ee.DecoderRequests) == 0 {
+		t.Errorf("Requests = 0, want 1")
+		return
+	}
+	got := ee.DecoderRequests[0]
+	if got != want {
+		t.Errorf("Recorded request = %q, want %q", got, want)
+	}
+}
+
+func TestAddDecoderFuncCapturesEncoderEngineError(t *testing.T) {
+	want := "error/error"
+	r := Router{}
+	r.encoderEngine = &mockEncoderEngine{}
+
+	err := r.AddDecoderFunc("error/error", decFunc)
+	if err == nil {
+		t.Errorf("Error = <nil>, want %q", want)
+		return
+	}
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
 }
 
 type emptyTestModule struct{}
