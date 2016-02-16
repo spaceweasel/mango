@@ -285,3 +285,62 @@ func TestBrowserDelReturnsBody(t *testing.T) {
 		t.Errorf("Body = %q, want %q", got, want)
 	}
 }
+
+// Patch
+func TestBrowserPatchSendsRequestWithCorrectURLToRouter(t *testing.T) {
+	want := "/mangos"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	b.Patch("/mangos", "", nil)
+	got := r.req.URL.String()
+	if got != want {
+		t.Errorf("URL = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserPatchSendsRequestWithHeadersToRouter(t *testing.T) {
+	want := "application/json"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	hdrs := http.Header{}
+	hdrs.Set("Accept", "application/json")
+	b.Patch("/mangos", "", hdrs)
+	got := r.req.Header.Get("Accept")
+	if got != want {
+		t.Errorf("Accept header = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserPatchReturnsStatusCode(t *testing.T) {
+	want := 404
+	r := NewMockRouter(404)
+	b := NewBrowser(r)
+	resp, _ := b.Patch("/mangos", "", nil)
+	got := resp.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestBrowserPatchReturnsHeaders(t *testing.T) {
+	want := "/the/moon"
+	r := NewMockRouter(201)
+	r.respHeader.Set("Location", "/the/moon")
+	b := NewBrowser(r)
+	resp, _ := b.Patch("/mangos", "", nil)
+	got := resp.HeaderMap.Get("Location")
+	if got != want {
+		t.Errorf("Location header = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserPatchReturnsBody(t *testing.T) {
+	want := "40 times around the deck is a mile"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	resp, _ := b.Patch("/mangos", "40 times around the deck is a mile", nil)
+	got := resp.Body.String()
+	if got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}

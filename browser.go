@@ -75,3 +75,17 @@ func (b *Browser) Del(url string, headers http.Header) (*httptest.ResponseRecord
 	b.handler.ServeHTTP(w, req)
 	return w, nil
 }
+
+// Patch simulates an HTTP PATCH request to the server.
+// The response can be examined afterwards to check status, headers
+// and content.
+func (b *Browser) Patch(url, body string, headers http.Header) (*httptest.ResponseRecorder, error) {
+	req, err := http.NewRequest("PATCH", url, bytes.NewBufferString(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header = headers
+	w := httptest.NewRecorder()
+	b.handler.ServeHTTP(w, req)
+	return w, nil
+}
