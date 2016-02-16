@@ -19,6 +19,20 @@ type tree struct {
 	paramValidator RouteParamValidators
 }
 
+// AddRouteParamValidator adds a new validator to the collection.
+// AddRouteParamValidator panics if a validator with the same Type()
+// exists.
+func (t *tree) AddRouteParamValidator(v ParamValidator) {
+	t.paramValidator.AddValidator(v)
+}
+
+// AddRouteParamValidators adds a slice of new validators to the collection.
+// AddRouteParamValidators panics if a validator with the same Type()
+// exists.
+func (t *tree) AddRouteParamValidators(validators []ParamValidator) {
+	t.paramValidator.AddValidators(validators)
+}
+
 // SetRouteParamValidators sets the internal paramValidator collection.
 func (t *tree) SetRouteParamValidators(v RouteParamValidators) {
 	t.paramValidator = v

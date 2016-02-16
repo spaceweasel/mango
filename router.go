@@ -11,6 +11,8 @@ import (
 type routes interface {
 	AddHandlerFunc(pattern, method string, handlerFunc ContextHandlerFunc)
 	HandlerFuncs(path string) (map[string]ContextHandlerFunc, map[string]string, bool)
+	AddRouteParamValidator(v ParamValidator)
+	AddRouteParamValidators(validators []ParamValidator)
 }
 
 // HookFunc is the signature for implementing prehook and posthook
@@ -28,6 +30,20 @@ type Router struct {
 	preHooks      []HookFunc
 	postHooks     []HookFunc
 	encoderEngine EncoderEngine
+}
+
+// AddRouteParamValidator adds a new validator to the collection.
+// AddRouteParamValidator panics if a validator with the same Type()
+// exists.
+func (r *Router) AddRouteParamValidator(v ParamValidator) {
+	r.routes.AddRouteParamValidator(v)
+}
+
+// AddRouteParamValidators adds a slice of new validators to the collection.
+// AddRouteParamValidators panics if a validator with the same Type()
+// exists.
+func (r *Router) AddRouteParamValidators(validators []ParamValidator) {
+	r.routes.AddRouteParamValidators(validators)
 }
 
 // NewRouter returns a pointer to a new Router instance.

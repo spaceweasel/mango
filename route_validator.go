@@ -35,6 +35,9 @@ type parameterValidators struct {
 }
 
 func (r *parameterValidators) AddValidator(v ParamValidator) {
+	if _, ok := r.validators[v.Type()]; ok {
+		panic("conflicting constraint type: " + v.Type())
+	}
 	r.validators[v.Type()] = v
 }
 
@@ -125,7 +128,7 @@ func (Int64Validator) Type() string {
 type AlphaValidator struct{}
 
 // Validate tests for alpha values.
-// Returns true if s contains only characters in the ranges a-z and A-Z.
+// Returns true if s contains only characters in the ranges a-z or A-Z.
 func (AlphaValidator) Validate(s string, params []string) bool {
 	re := regexp.MustCompile(`^[a-zA-Z]+$`)
 	return re.MatchString(s)
@@ -242,6 +245,59 @@ func (UUIDValidator) Validate(s string, params []string) bool {
 func (UUIDValidator) Type() string {
 	return "uuid"
 }
+
+// AlphaNumValidator tests for a sequence containing only alphanumeric characters.
+type AlphaNumValidator struct{}
+
+// Validate tests for alphanumeric values.
+// Returns true if s contains only characters in the ranges a-z, A-Z or 0-9.
+func (AlphaNumValidator) Validate(s string, params []string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+	return re.MatchString(s)
+}
+
+// Type returns the constraint name (alphanum).
+func (AlphaNumValidator) Type() string {
+	return "alphanum"
+}
+
+// PrefixValidator tests for a specified prefix
+type PrefixValidator struct{}
+
+// Validate tests for a prefix.
+// Returns true if s starts with the prefix specified in args.
+func (PrefixValidator) Validate(s string, params []string) bool {
+	pf := ""
+	if len(params) > 0 {
+		pf = params[0]
+	}
+	return strings.HasPrefix(s, pf)
+}
+
+// Type returns the constraint name (prefix).
+func (PrefixValidator) Type() string {
+	return "prefix"
+}
+
+// SuffixValidator tests for a specified suffix
+type SuffixValidator struct{}
+
+// Validate tests for a suffix.
+// Returns true if s ends with the suffix specified in args.
+func (SuffixValidator) Validate(s string, params []string) bool {
+	sf := ""
+	if len(params) > 0 {
+		sf = params[0]
+	}
+	return strings.HasSuffix(s, sf)
+}
+
+// Type returns the constraint name (suffix).
+func (SuffixValidator) Type() string {
+	return "suffix"
+}
+
+//
 
 func getDefaultValidators() []ParamValidator {
 	return []ParamValidator{

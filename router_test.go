@@ -10,7 +10,16 @@ import (
 )
 
 type mockRoutes struct {
-	routes map[string]map[string]ContextHandlerFunc
+	routes     map[string]map[string]ContextHandlerFunc
+	validators map[string]ParamValidator
+}
+
+func (m *mockRoutes) TestValidators(s, constraint string) bool {
+	v, ok := m.validators[constraint]
+	if !ok {
+		panic("Unknown constraint" + constraint)
+	}
+	return v.Validate(s, []string{})
 }
 
 func (m *mockRoutes) AddHandlerFunc(pattern, method string, handlerFunc ContextHandlerFunc) {
@@ -30,9 +39,23 @@ func (m *mockRoutes) HandlerFuncs(path string) (map[string]ContextHandlerFunc, m
 	return hm, nil, ok
 }
 
+func (m *mockRoutes) AddRouteParamValidator(v ParamValidator) {
+	if _, ok := m.validators[v.Type()]; ok {
+		panic("conflicting constraint type: " + v.Type())
+	}
+	m.validators[v.Type()] = v
+}
+
+func (m *mockRoutes) AddRouteParamValidators(validators []ParamValidator) {
+	for _, v := range validators {
+		m.AddRouteParamValidator(v)
+	}
+}
+
 func newMockRoutes() *mockRoutes {
 	mr := mockRoutes{}
 	mr.routes = make(map[string]map[string]ContextHandlerFunc)
+	mr.validators = make(map[string]ParamValidator)
 	return &mr
 }
 
@@ -707,6 +730,76 @@ func TestAddDecoderFuncCapturesEncoderEngineError(t *testing.T) {
 	if got != want {
 		t.Errorf("Error = %q, want %q", got, want)
 	}
+}
+
+func TestRouterAddRouteParamValidator(t *testing.T) {
+	want := true
+	r := Router{}
+	routes := newMockRoutes()
+	r.routes = routes
+	r.AddRouteParamValidator(Int32Validator{})
+	valid := routes.TestValidators("123", "int32")
+	got := valid
+	if got != want {
+		t.Errorf("Valid = %t, want %t", got, want)
+	}
+}
+
+func TestRouterAddRouteParamValidators(t *testing.T) {
+	want := true
+	r := Router{}
+	routes := newMockRoutes()
+	r.routes = routes
+	r.AddRouteParamValidators([]ParamValidator{Int32Validator{}})
+	valid := routes.TestValidators("123", "int32")
+	got := valid
+	if got != want {
+		t.Errorf("Valid = %t, want %t", got, want)
+	}
+}
+
+func TestRouterAddRouteParamValidatorPanicsIfConstraintConflicts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: int32"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	r := Router{}
+	routes := newMockRoutes()
+	r.routes = routes
+
+	r.AddRouteParamValidator(Int32Validator{})
+	r.AddRouteParamValidator(dupValidator{})
+}
+
+func TestRouterAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: int32"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	r := Router{}
+	routes := newMockRoutes()
+	r.routes = routes
+
+	r.AddRouteParamValidators([]ParamValidator{
+		Int32Validator{},
+		dupValidator{},
+	})
 }
 
 type emptyTestModule struct{}

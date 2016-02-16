@@ -341,6 +341,133 @@ func TestUUIDValidator(t *testing.T) {
 	}
 }
 
+//alphanum
+func TestAlphaNumValidatorType(t *testing.T) {
+	want := "alphanum"
+
+	v := AlphaNumValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestAlphaNumValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"K3HAS34DASDKSHA75SDA1DADIASE48WF7DSF", []string{}, true, "Uppercase"},
+		{"k3has34dasdksha75sda1dadiase48wf7dsf", []string{}, true, "Lowercase"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "Mixedcase"},
+		{"KHasdasdKSDFHasdadadIASDEWQWfdsf", []string{}, true, "Alpha only"},
+		{"799766576435969875764448", []string{}, true, "Digits only"},
+		{"3A456DE63A456DE63A456DE6", []string{}, true, "Hex"},
+		{"K3Has 34dasdKSHa 75sda1da  dIASE 48Wf7dsf", []string{}, false, "Spaces"},
+		{"K3!Has34dasd?KSHa75sd,a1da;dIASE48Wf7dsf", []string{}, false, "Punctuation"},
+		{"K3Has34_dasdK_SHa75sda1dad_IASE48Wf7_dsf", []string{}, false, "Underscores"},
+		{"K3Has3-4dasdKSHa7-5sda1dadIA-SE48W-f7dsf", []string{}, false, "Hyphens"},
+		{"K3Has34.dasdKS.Ha75sda1d.adIASE4.8Wf7dsf", []string{}, false, "Periods"},
+	}
+
+	v := AlphaNumValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate(%q) = %v (%s)", test.input, got, test.comment)
+		}
+	}
+}
+
+//prefix
+func TestPrefixValidatorType(t *testing.T) {
+	want := "prefix"
+
+	v := PrefixValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestPrefixValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"CHEESEBICYCLE", []string{"Cheese"}, false, "Uppercase"},
+		{"cheesebicycle", []string{"Cheese"}, false, "Lowercase"},
+		{"CheeseBicycle", []string{"Cheese"}, true, "Mixedcase"},
+		{"CheeseBicycle", []string{"heese"}, false, "Offset"},
+		{"CheeseBicycle", []string{"Bicycle"}, false, "Suffix"},
+		{"Ch33seBicycle", []string{"Ch33se"}, true, "Digits"},
+		{"Cheese Bicycle", []string{"Cheese"}, true, "End Spaces"},
+		{"Che eseBicycle", []string{"Che ese"}, true, "Mid Spaces"},
+		{"Cheese!Bicycle", []string{"Cheese!B"}, true, "Punctuation"},
+		{"Cheese_Bicycle", []string{"Cheese_B"}, true, "Underscores"},
+		{"Cheese-Bicycle", []string{"Cheese-B"}, true, "Hyphens"},
+		{"Cheese.Bicycle", []string{"Cheese.B"}, true, "Periods"},
+		{"CheeseBicycle", []string{}, true, "Empty"},
+	}
+
+	v := PrefixValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate(%q) = %v (%s)", test.input, got, test.comment)
+		}
+	}
+}
+
+//suffix
+func TestSuffixValidatorType(t *testing.T) {
+	want := "suffix"
+
+	v := SuffixValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestSuffixValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"CHEESEBICYCLE", []string{"Bicycle"}, false, "Uppercase"},
+		{"cheesebicycle", []string{"Bicycle"}, false, "Lowercase"},
+		{"CheeseBicycle", []string{"Bicycle"}, true, "Mixedcase"},
+		{"CheeseBicycle", []string{"Bicycl"}, false, "Offset"},
+		{"CheeseBicycle", []string{"Cheese"}, false, "Prefix"},
+		{"Cheese81cycl3", []string{"81cycl3"}, true, "Digits"},
+		{"Cheese Bicycle", []string{"Bicycle"}, true, "Start Spaces"},
+		{"CheeseBi cycle", []string{"Bi cycle"}, true, "Mid Spaces"},
+		{"Cheese!Bicycle", []string{"e!Bicycle"}, true, "Punctuation"},
+		{"Cheese_Bicycle", []string{"e_Bicycle"}, true, "Underscores"},
+		{"Cheese-Bicycle", []string{"e-Bicycle"}, true, "Hyphens"},
+		{"Cheese.Bicycle", []string{"e.Bicycle"}, true, "Periods"},
+		{"CheeseBicycle", []string{}, true, "Empty"},
+	}
+
+	v := SuffixValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate(%q) = %v (%s)", test.input, got, test.comment)
+		}
+	}
+}
+
 // End of validators
 
 func TestNewParameterValidatorsReturnsWithInitialisedValidatorsMap(t *testing.T) {
@@ -506,6 +633,66 @@ func TestIsValidTrimsSpaceAroundConstraintArgs(t *testing.T) {
 	}
 }
 
+func TestAddValidatorPanicsWhenConstraintTypeExists(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	pv := newParameterValidators()
+	pv.AddValidator(testValidator1{})
+	pv.AddValidator(testValidator1DuplicateTypeCode{})
+}
+
+func TestAddValidatorsPanicsWhenConstraintTypeExists(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	pv := newParameterValidators()
+	pv.AddValidators([]ParamValidator{
+		testValidator1{},
+		testValidator1DuplicateTypeCode{},
+	})
+}
+
+func TestAddValidatorPanicsWithCorrectErrorMessageWhenConstraintTypeExists(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: test1"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		}
+	}()
+
+	pv := newParameterValidators()
+	pv.AddValidator(testValidator1{})
+	pv.AddValidator(testValidator1DuplicateTypeCode{})
+}
+
+func TestAddValidatorsPanicsWithCorrectErrorMessageWhenConstraintTypeExists(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: test1"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		}
+	}()
+
+	pv := newParameterValidators()
+	pv.AddValidators([]ParamValidator{
+		testValidator1{},
+		testValidator1DuplicateTypeCode{},
+	})
+}
+
 func TestIsValidPanicsWhenConstraintMalformed(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
@@ -601,4 +788,14 @@ func (testValidator3) Validate(s string, args []string) bool {
 
 func (testValidator3) Type() string {
 	return "test3"
+}
+
+type testValidator1DuplicateTypeCode struct{}
+
+func (testValidator1DuplicateTypeCode) Validate(s string, args []string) bool {
+	return s == "testValidator1DuplicateTypeCode"
+}
+
+func (testValidator1DuplicateTypeCode) Type() string {
+	return "test1"
 }

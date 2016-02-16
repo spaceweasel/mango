@@ -246,6 +246,94 @@ func TestSettingRouteParamValidators(t *testing.T) {
 	}
 }
 
+func TestTreeAddRouteParamValidator(t *testing.T) {
+	want := true
+
+	tree := tree{}
+	v := &parameterValidators{}
+	v.validators = make(map[string]ParamValidator)
+	tree.paramValidator = v
+
+	tree.AddRouteParamValidator(Int32Validator{})
+	valid := tree.paramValidator.IsValid("123", "int32")
+	got := valid
+	if got != want {
+		t.Errorf("Valid = %t, want %t", got, want)
+	}
+}
+
+func TestTreeAddRouteParamValidators(t *testing.T) {
+	want := true
+
+	tree := tree{}
+	v := &parameterValidators{}
+	v.validators = make(map[string]ParamValidator)
+	tree.paramValidator = v
+
+	tree.AddRouteParamValidators([]ParamValidator{Int32Validator{}})
+	valid := tree.paramValidator.IsValid("123", "int32")
+	got := valid
+	if got != want {
+		t.Errorf("Valid = %t, want %t", got, want)
+	}
+}
+
+type dupValidator struct{}
+
+func (dupValidator) Validate(s string, args []string) bool {
+	return true
+}
+
+func (dupValidator) Type() string {
+	return "int32"
+}
+
+func TestTreeAddRouteParamValidatorPanicsIfConstraintConflicts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: int32"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	tree := tree{}
+	v := &parameterValidators{}
+	v.validators = make(map[string]ParamValidator)
+	tree.paramValidator = v
+
+	tree.AddRouteParamValidator(Int32Validator{})
+	tree.AddRouteParamValidator(dupValidator{})
+}
+
+func TestTreeAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "conflicting constraint type: int32"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	tree := tree{}
+	v := &parameterValidators{}
+	v.validators = make(map[string]ParamValidator)
+	tree.paramValidator = v
+
+	tree.AddRouteParamValidators([]ParamValidator{
+		Int32Validator{},
+		dupValidator{},
+	})
+}
+
 func TestNewTreeSetsRouteParamValidators(t *testing.T) {
 	want := reflect.TypeOf(&parameterValidators{}).String()
 	tree := newTree()
