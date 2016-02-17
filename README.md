@@ -25,10 +25,10 @@ import (
 
 func main() {
   // get a new router instance
-  r := mango.NewRouter()
+  router := mango.NewRouter()
 
   // register a GET handler function
-  r.Get("/hello", hello)
+  router.Get("/hello", hello)
 
   // assign the router as the main handler
   http.ListenAndServe(":8080", router)
