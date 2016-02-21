@@ -3,9 +3,7 @@ package mango
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
-	"reflect"
 	"runtime"
 )
 
@@ -15,10 +13,6 @@ type routes interface {
 	AddRouteParamValidator(v ParamValidator)
 	AddRouteParamValidators(validators []ParamValidator)
 }
-
-// HookFunc is the signature for implementing prehook and posthook
-// functions.
-type HookFunc func(*Context) error
 
 // RequestLogFunc is the signature for implementing router RequestLogger
 type RequestLogFunc func(*RequestLog)
@@ -31,8 +25,8 @@ type RequestLogFunc func(*RequestLog)
 // TODO: Add more info here.
 type Router struct {
 	routes        routes
-	preHooks      []HookFunc
-	postHooks     []HookFunc
+	preHooks      []ContextHandlerFunc
+	postHooks     []ContextHandlerFunc
 	encoderEngine EncoderEngine
 	RequestLogger RequestLogFunc
 	ErrorLogger   func(error)
@@ -144,28 +138,32 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Request:       req,
 		Writer:        resp,
 		RouteParams:   params,
-		encoderEngine: r.encoderEngine}
+		encoderEngine: r.encoderEngine,
+	}
 
 	//call prehooks
-	var err error
 	for _, h := range r.preHooks {
-		if err := h(c); err != nil {
-			// just log and continue for the moment - might need to
-			// revisit this in the future. Possibly return from here?
-			name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-			log.Printf("error running prehook (%s): %v", name, err)
+		h(c)
+		if resp.responded || c.responseReady {
+			break
 		}
 	}
 	if c.Identity != nil {
 		reqLog.UserID = c.Identity.UserID()
 	}
 
-	fn.ServeHTTP(c)
+	// TODO: record name of handler function in reqLog
+	// handlerName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+
+	// only run handler if a prehook hasn't responded already
+	if !resp.responded && !c.responseReady {
+		fn.ServeHTTP(c)
+	}
 
 	//perform content negotiation...
 	var encoder Encoder
 	var ct string
-
+	var err error
 	if c.model != nil {
 		encoder, ct, err = c.GetEncoder()
 		if err != nil {
@@ -186,16 +184,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 	}
 	// }
 
-	// now call posthooks here
-	for _, h := range r.postHooks {
-		if err := h(c); err != nil {
-			// just log and continue for the moment - might need to
-			// revisit this in the future. Possibly return from here?
-			name := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
-			log.Printf("error running posthook (%s): %v", name, err)
-		}
-	}
-
 	if c.status != 0 && c.status != 200 {
 		resp.WriteHeader(c.status)
 	}
@@ -207,23 +195,29 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		resp.Write(c.payload)
 	}
+
+	resp.readonly = true // prevent PostHooks from altering the response
+	for _, h := range r.postHooks {
+		h(c)
+	}
 }
 
-// AddPreHook adds a HookFunc that will be called before any handler
-// function is called.
+// AddPreHook adds a ContextHandlerFunc that will be called before any
+// handler function is called.
 // They can be used to sanitize requests, authenticate users, adding
-// CORS handling, request logging etc. and can respond directly,
-// preventing any handler from executing if required.
+// CORS handling etc. and can respond directly, preventing any handler
+// from executing if required.
 // Note: PreHooks are executed in the order they are added.
-func (r *Router) AddPreHook(hook HookFunc) {
+func (r *Router) AddPreHook(hook ContextHandlerFunc) {
 	r.preHooks = append(r.preHooks, hook)
 }
 
-// AddPostHook adds a HookFunc that will be called after a handler
-// function has been called.
-// They can be used to perform cleanup tasks, logging etc.
+// AddPostHook adds a ContextHandlerFunc that will be called after a
+// handler function has been called.
+// PostHooks can be used to perform cleanup tasks etc., but unlike
+// PreHooks, they cannot alter a response.
 // Note: PostHooks are executed in the order they are added.
-func (r *Router) AddPostHook(hook HookFunc) {
+func (r *Router) AddPostHook(hook ContextHandlerFunc) {
 	r.postHooks = append(r.postHooks, hook)
 }
 

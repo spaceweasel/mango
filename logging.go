@@ -24,6 +24,7 @@ type WatchedResponse struct {
 	byteCount int
 	status    int
 	readonly  bool
+	responded bool
 }
 
 // Header returns the header map that will be sent by
@@ -52,6 +53,7 @@ func (w *WatchedResponse) WriteHeader(status int) {
 	if w.readonly {
 		return
 	}
+	w.responded = true
 	w.status = status
 	w.rw.WriteHeader(status)
 }
@@ -62,8 +64,9 @@ func (w *WatchedResponse) WriteHeader(status int) {
 // See http.ResponseWriter interface for more information.
 func (w *WatchedResponse) Write(b []byte) (int, error) {
 	if w.readonly {
-		return 0, fmt.Errorf("Write method has been called already")
+		return 0, fmt.Errorf("write method has been called already")
 	}
+	w.responded = true
 	i, err := w.rw.Write(b)
 	w.byteCount += i
 	return i, err

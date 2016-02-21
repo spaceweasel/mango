@@ -548,3 +548,67 @@ func TestRedirectUsesSuppliedUrlToSetLocationHeader(t *testing.T) {
 		t.Errorf("Location = %q, want %q", got, want)
 	}
 }
+
+//
+
+func TestResponseWithModelSetsResponseReady(t *testing.T) {
+	type testModel struct {
+		a string
+		b int
+	}
+	want := true
+	model := testModel{"cheese", 24}
+	c := Context{}
+	c.Respond().WithModel(model)
+	got := c.responseReady
+	if got != want {
+		t.Errorf("Model = %t, want %t", got, want)
+	}
+}
+
+func TestResponseWithStatusSetsResponseReady(t *testing.T) {
+	want := true
+	c := Context{}
+	c.Respond().WithStatus(404)
+	got := c.responseReady
+	if got != want {
+		t.Errorf("Model = %t, want %t", got, want)
+	}
+}
+
+func TestRespondWithSetsResponseReadyWhenCalledWithInteger(t *testing.T) {
+	want := true
+	c := Context{}
+	c.RespondWith(204)
+	got := c.responseReady
+	if got != want {
+		t.Errorf("Model = %t, want %t", got, want)
+	}
+}
+
+func TestRespondWithSetsResponseReadyWhenCalledWithString(t *testing.T) {
+	want := true
+	c := Context{}
+	c.RespondWith("Mango biscuits")
+
+	got := c.responseReady
+	if got != want {
+		t.Errorf("Model = %t, want %t", got, want)
+	}
+}
+
+func TestRespondWithSetsResponseReadyWhenCalledWithArgThatNotIntegerOrString(t *testing.T) {
+	type testModel struct {
+		a string
+		b int
+	}
+	want := true
+	model := testModel{"cheese", 24}
+
+	c := Context{}
+	c.RespondWith(model)
+	got := c.responseReady
+	if got != want {
+		t.Errorf("Model = %t, want %t", got, want)
+	}
+}

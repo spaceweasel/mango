@@ -21,6 +21,7 @@ type Response struct {
 // This method returns the Response object and can be chained.
 func (r *Response) WithModel(m interface{}) *Response {
 	r.context.model = m
+	r.context.responseReady = true
 	return r
 }
 
@@ -28,6 +29,7 @@ func (r *Response) WithModel(m interface{}) *Response {
 // This method returns the Response object and can be chained.
 func (r *Response) WithStatus(s int) *Response {
 	r.context.status = s
+	r.context.responseReady = true
 	return r
 }
 
@@ -60,6 +62,7 @@ type Context struct {
 	encoderEngine EncoderEngine
 	Reader        io.ReadCloser
 	Identity      Identity
+	responseReady bool
 }
 
 // ContextHandlerFunc type is an adapter to allow the use of ordinary
@@ -99,6 +102,7 @@ func (c *Context) RespondWith(d interface{}) *Response {
 	default: //must be a model
 		c.model = d
 	}
+	c.responseReady = true
 	return response
 }
 

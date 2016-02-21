@@ -295,3 +295,104 @@ func TestWatchedResponseSetsHeader(t *testing.T) {
 		t.Errorf("Content-Type = %q, want %q", got, want)
 	}
 }
+
+func TestWatchedResponseWriteHeaderSetsRespondedFlag(t *testing.T) {
+	want := true
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.WriteHeader(404)
+	got := resp.responded
+
+	if got != want {
+		t.Errorf("Responded = %t, want %t", got, want)
+	}
+}
+
+func TestWatchedResponseWriteSetsRespondedFlag(t *testing.T) {
+	want := true
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	var bytes = []byte("mangoes in the morning")
+	resp.Write(bytes)
+
+	got := resp.responded
+
+	if got != want {
+		t.Errorf("Responded = %t, want %t", got, want)
+	}
+}
+
+func TestWatchedResponseWriteHeaderIsIgnoredWhenReadonly(t *testing.T) {
+	want := 200
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.readonly = true
+	resp.WriteHeader(404)
+	got := w.Code
+
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestWatchedResponseWriteSendsNoBytesWhenReadonly(t *testing.T) {
+	want := 0
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.readonly = true
+	var bytes = []byte("mangoes in the morning")
+	bc, _ := resp.Write(bytes)
+
+	got := bc
+
+	if got != want {
+		t.Errorf("Body = %d, want %d", got, want)
+	}
+}
+
+func TestWatchedResponseWriteReturnsErrorWhenReadonly(t *testing.T) {
+	want := "write method has been called already"
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.readonly = true
+	var bytes = []byte("mangoes in the morning")
+	_, err := resp.Write(bytes)
+
+	if err == nil {
+		t.Errorf("Error = <nil>, want %q", want)
+	}
+	got := err.Error()
+
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
+func TestWatchedResponseWriteIsIgnoredWhenReadonly(t *testing.T) {
+	want := ""
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.readonly = true
+	var bytes = []byte("mangoes in the morning")
+	resp.Write(bytes)
+
+	got := w.Body.String()
+
+	if got != want {
+		t.Errorf("Body = %t, want %t", got, want)
+	}
+}
+
+func TestWatchedResponseDoesNotSetUnderlyingHeaderWhenReadonly(t *testing.T) {
+	want := "application/mango"
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.Header().Set("Content-Type", "application/mango")
+	resp.readonly = true
+	resp.Header().Set("Content-Type", "application/biscuits")
+	got := w.HeaderMap.Get("Content-Type")
+
+	if got != want {
+		t.Errorf("Content-Type = %q, want %q", got, want)
+	}
+}

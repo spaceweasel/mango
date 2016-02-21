@@ -192,9 +192,8 @@ func TestWhenNoErrorAndNoStatusSetServeHTTPReturns200OK(t *testing.T) {
 func TestAddPreHookAppendsToHookList(t *testing.T) {
 	want := "prehookhandler"
 	callStack := ""
-	ph := func(ctx *Context) error {
+	ph := func(ctx *Context) {
 		callStack += "prehook"
-		return nil
 	}
 
 	rtr := Router{}
@@ -217,17 +216,14 @@ func TestAddPreHookAppendsToHookList(t *testing.T) {
 func TestPreHooksCalledInOrder(t *testing.T) {
 	want := "prehook1prehook2prehook3handler"
 	callStack := ""
-	ph1 := func(ctx *Context) error {
+	ph1 := func(ctx *Context) {
 		callStack += "prehook1"
-		return nil
 	}
-	ph2 := func(ctx *Context) error {
+	ph2 := func(ctx *Context) {
 		callStack += "prehook2"
-		return nil
 	}
-	ph3 := func(ctx *Context) error {
+	ph3 := func(ctx *Context) {
 		callStack += "prehook3"
-		return nil
 	}
 
 	rtr := Router{}
@@ -252,9 +248,8 @@ func TestPreHooksCalledInOrder(t *testing.T) {
 func TestAddPostHookAppendsToHookList(t *testing.T) {
 	want := "handlerposthook"
 	callStack := ""
-	ph := func(ctx *Context) error {
+	ph := func(ctx *Context) {
 		callStack += "posthook"
-		return nil
 	}
 
 	rtr := Router{}
@@ -277,17 +272,14 @@ func TestAddPostHookAppendsToHookList(t *testing.T) {
 func TestPostHooksCalledInOrder(t *testing.T) {
 	want := "handlerposthook1posthook2posthook3"
 	callStack := ""
-	ph1 := func(ctx *Context) error {
+	ph1 := func(ctx *Context) {
 		callStack += "posthook1"
-		return nil
 	}
-	ph2 := func(ctx *Context) error {
+	ph2 := func(ctx *Context) {
 		callStack += "posthook2"
-		return nil
 	}
-	ph3 := func(ctx *Context) error {
+	ph3 := func(ctx *Context) {
 		callStack += "posthook3"
-		return nil
 	}
 
 	rtr := Router{}
@@ -306,6 +298,166 @@ func TestPostHooksCalledInOrder(t *testing.T) {
 	got := callStack
 	if got != want {
 		t.Errorf("Status = %q, want %q", got, want)
+	}
+}
+
+func TestPostHookResponsesAreIgnored(t *testing.T) {
+	ph := func(ctx *Context) {
+		ctx.RespondWith("with biscuits").WithStatus(204)
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AddPostHook(ph)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	rtr.ServeHTTP(w, req)
+	want := 200
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+
+	wantBody := "Mango trees"
+	gotBody := w.Body.String()
+	if gotBody != wantBody {
+		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+	}
+}
+
+func TestPreHookWriterResponsesPreventMainHandlerRunning(t *testing.T) {
+	ph := func(ctx *Context) {
+		ctx.Writer.WriteHeader(204)
+		ctx.Writer.Write([]byte("with biscuits"))
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AddPreHook(ph)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	rtr.ServeHTTP(w, req)
+	want := 204
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+
+	wantBody := "with biscuits"
+	gotBody := w.Body.String()
+	if gotBody != wantBody {
+		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+	}
+}
+
+func TestPreHookContextResponsesPreventMainHandlerRunning(t *testing.T) {
+	ph := func(ctx *Context) {
+		ctx.RespondWith("with biscuits").WithStatus(204)
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AddPreHook(ph)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	rtr.ServeHTTP(w, req)
+	want := 204
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+
+	wantBody := "with biscuits"
+	gotBody := w.Body.String()
+	if gotBody != wantBody {
+		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+	}
+}
+
+func TestPreHookWriterResponsesPreventSubsequentPreHooksRunning(t *testing.T) {
+	ph1 := func(ctx *Context) {
+		ctx.Writer.WriteHeader(204)
+		ctx.Writer.Write([]byte("with biscuits"))
+	}
+	ph2 := func(ctx *Context) {
+		t.Errorf("Subsequent PreHooks not ignored")
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AddPreHook(ph1)
+	rtr.AddPreHook(ph2)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	rtr.ServeHTTP(w, req)
+}
+
+func TestPreHookContextResponsesPreventSubsequentPreHooksRunning(t *testing.T) {
+	ph1 := func(ctx *Context) {
+		ctx.RespondWith("with biscuits").WithStatus(204)
+	}
+	ph2 := func(ctx *Context) {
+		t.Errorf("Subsequent PreHooks not ignored")
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AddPreHook(ph1)
+	rtr.AddPreHook(ph2)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	rtr.ServeHTTP(w, req)
+}
+
+func TestPreHookContextResponsesCanSerializeModel(t *testing.T) {
+	want := "{\"Name\":\"Mango\",\"Size\":34,\"Edible\":true}\n"
+	ph := func(ctx *Context) {
+		m := struct {
+			Name   string
+			Size   int
+			Edible bool
+		}{
+			"Mango", 34, true,
+		}
+		ctx.RespondWith(m)
+	}
+
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.encoderEngine = newEncoderEngine()
+	rtr.AddPreHook(ph)
+	rtr.Get("/test", func(ctx *Context) {
+		ctx.RespondWith("Mango trees").WithStatus(200)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Accept", "application/json")
+	rtr.ServeHTTP(w, req)
+
+	got := w.Body.String()
+	if got != want {
+		t.Errorf("Body = %s, want %s", got, want)
 	}
 }
 
