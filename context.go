@@ -119,17 +119,16 @@ func (c *Context) urlSchemeHost() string {
 
 // Error sends the specified message and HTTP status code as a response.
 // Request handlers should cease execution after calling this method.
-// TODO: Not yet implemented
-func (c *Context) Error(msg string, status int) {
-	panic("not yet implemented")
+func (c *Context) Error(msg string, code int) {
+	http.Error(c.Writer, msg, code)
 }
 
 // Redirect sends a redirect response using the specified URL and HTTP
 // status.
 // Request handlers should cease execution after calling this method.
 // TODO: Not yet implemented
-func (c *Context) Redirect(url string, status int) {
-	panic("not yet implemented")
+func (c *Context) Redirect(urlStr string, code int) {
+	http.Redirect(c.Writer, c.Request, urlStr, code)
 }
 
 // Render executes a template using the supplied data.

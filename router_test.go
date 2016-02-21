@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 )
 
 type mockRoutes struct {
@@ -136,39 +139,6 @@ func TestDeleteAddsHandlerToRoutes(t *testing.T) {
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
-	}
-}
-
-func TestSendErrorUsesSuppliedStatusCode(t *testing.T) {
-	r := Router{}
-	w := httptest.NewRecorder()
-	r.sendError(w, "an error string", 404)
-	want := 404
-	got := w.Code
-	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
-	}
-}
-
-func TestSendErrorUsesSuppliedErrorMessage(t *testing.T) {
-	r := Router{}
-	w := httptest.NewRecorder()
-	r.sendError(w, "an error string", 404)
-	want := "an error string"
-	got := w.Body.String()
-	if got != want {
-		t.Errorf("Body = %q, want %q", got, want)
-	}
-}
-
-func TestSendErrorSetsContentTypeToTextPlain(t *testing.T) {
-	r := Router{}
-	w := httptest.NewRecorder()
-	r.sendError(w, "an error string", 404)
-	want := "text/plain; charset=utf-8"
-	got := w.HeaderMap.Get("Content-Type")
-	if got != want {
-		t.Errorf("Body = %q, want %q", got, want)
 	}
 }
 
@@ -457,7 +427,7 @@ func TestResponseMessageWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 	req.Header.Set("Accept", "test/mango")
 	rtr.ServeHTTP(w, req)
 
-	want := "Unable to encode to requested acceptable formats: \"test/mango\""
+	want := "Unable to encode to requested acceptable formats: \"test/mango\"\n"
 	got := w.Body.String()
 	if got != want {
 		t.Errorf("Error message = %q, want %q", got, want)
@@ -515,7 +485,7 @@ func TestResponseMessageWhenErrorEncodingPayload(t *testing.T) {
 	req.Header.Set("Accept", "test/test")
 	rtr.ServeHTTP(w, req)
 
-	want := "Sorry, something went wrong."
+	want := "Internal Server Error\n"
 	got := w.Body.String()
 	if got != want {
 		t.Errorf("Error message = %q, want %q", got, want)
@@ -556,25 +526,6 @@ func TestNewRouterInitialisesEncoderEngineWithDefaultMediaType(t *testing.T) {
 		t.Errorf("EncoderEngine.DefaultMediaType = %q, want %q", got, want)
 	}
 }
-
-//
-
-// func TestGetAddsHandlerToRoutes(t *testing.T) {
-// 	want := "testFunc"
-// 	rtr := Router{}
-// 	rtr.routes = newMockRoutes()
-// 	rtr.Get("/test", testFunc)
-// 	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
-// 	if !ok {
-// 		t.Errorf("Handler not added")
-// 	}
-// 	h := handlers["GET"]
-// 	got := extractFnName(h)
-// 	if got != want {
-// 		t.Errorf("Handler function = %q, want %q", got, want)
-// 	}
-// }
-//
 
 func TestRegisterModulesWithEmptyModuleRegistersNoNewRoutes(t *testing.T) {
 	want := 0
@@ -800,6 +751,187 @@ func TestRouterAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) 
 		Int32Validator{},
 		dupValidator{},
 	})
+}
+
+func TestRouterRequestLoggingWhenNotFound(t *testing.T) {
+	// no routes, so code: 404 and "404 page not found\n" - 19 bytes
+	want := "127.0.0.1 - - [11/Oct/2000:13:55:36 -0700] \"GET /spaceweasel/mango/stone.png HTTP/1.1\" 404 19"
+
+	location := time.FixedZone("test", -25200)
+	start := time.Date(2000, 10, 11, 13, 55, 36, 0, location)
+	nowUTC = func() time.Time {
+		return start
+	}
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	got := ""
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		got = l.CommonFormat()
+		if got != want {
+			t.Errorf("Log = %q, want %q", got, want)
+		}
+	}
+	r.routes = newMockRoutes()
+	r.ServeHTTP(w, req)
+}
+
+func TestRouterRequestLoggingWithUserHandler(t *testing.T) {
+	want := "127.0.0.1 - - [11/Oct/2000:13:55:36 -0700] \"GET /mango HTTP/1.1\" 200 19"
+
+	location := time.FixedZone("test", -25200)
+	start := time.Date(2000, 10, 11, 13, 55, 36, 0, location)
+	nowUTC = func() time.Time {
+		return start
+	}
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	got := ""
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		got = l.CommonFormat()
+		if got != want {
+			t.Errorf("Log = %q, want %q", got, want)
+		}
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		c.RespondWith("A mango in the hand")
+	})
+	r.ServeHTTP(w, req)
+}
+
+func TestRouterRequestLoggingWithNoContentResponse(t *testing.T) {
+	want := "127.0.0.1 - - [11/Oct/2000:13:55:36 -0700] \"GET /mango HTTP/1.1\" 204 0"
+
+	location := time.FixedZone("test", -25200)
+	start := time.Date(2000, 10, 11, 13, 55, 36, 0, location)
+	nowUTC = func() time.Time {
+		return start
+	}
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	got := ""
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		got = l.CommonFormat()
+		if got != want {
+			t.Errorf("Log = %q, want %q", got, want)
+		}
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		c.RespondWith(204)
+	})
+	r.ServeHTTP(w, req)
+}
+
+func TestRouterRequestLoggingWhenUnRecoveredPanic(t *testing.T) {
+	msg := "Internal Server Error\n"
+	bCount := strconv.Itoa(len(msg))
+	want := "127.0.0.1 - - [11/Oct/2000:13:55:36 -0700] \"GET /mango HTTP/1.1\" 500 " + bCount
+
+	location := time.FixedZone("test", -25200)
+	start := time.Date(2000, 10, 11, 13, 55, 36, 0, location)
+	nowUTC = func() time.Time {
+		return start
+	}
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	r := Router{}
+	ch := make(chan string)
+	r.RequestLogger = func(l *RequestLog) {
+		ch <- l.CommonFormat()
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		panic("what no mangoes!")
+	})
+
+	r.ServeHTTP(w, req)
+
+	select {
+	case got := <-ch:
+		if got != want {
+			t.Errorf("Log = %q, want %q", got, want)
+		}
+	case <-time.After(time.Second * 3):
+		t.Errorf("Timed out")
+	}
+}
+
+func TestRouterErrorLoggingMsgHasSummaryAsFirstLineWhenUnRecoveredPanic(t *testing.T) {
+	want := "what no mangoes!"
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	w := httptest.NewRecorder()
+	r := Router{}
+	ch := make(chan error)
+	r.ErrorLogger = func(err error) {
+		ch <- err
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		panic("what no mangoes!")
+	})
+
+	r.ServeHTTP(w, req)
+
+	select {
+	case err := <-ch:
+		msg := err.Error()
+		lines := strings.Split(msg, "\n")
+		got := lines[0]
+		if got != want {
+			t.Errorf("Error Summary = %q, want %q", got, want)
+		}
+	case <-time.After(time.Second * 3):
+		t.Errorf("Timed out")
+	}
+}
+
+func TestRouterErrorLoggingMsgHasReqDetailAsSecondLineWhenUnRecoveredPanic(t *testing.T) {
+	want := "127.0.0.1 - - [11/Oct/2000:13:55:36 -0700] \"GET /mango HTTP/1.1\" 0 0"
+
+	location := time.FixedZone("test", -25200)
+	start := time.Date(2000, 10, 11, 13, 55, 36, 0, location)
+	nowUTC = func() time.Time {
+		return start
+	}
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	r := Router{}
+	ch := make(chan error)
+	r.ErrorLogger = func(err error) {
+		ch <- err
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		panic("what no mangoes!")
+	})
+
+	r.ServeHTTP(w, req)
+
+	select {
+	case err := <-ch:
+		msg := err.Error()
+		lines := strings.Split(msg, "\n")
+		got := lines[1]
+		if got != want {
+			t.Errorf("Error request = %q, want %q", got, want)
+		}
+	case <-time.After(time.Second * 3):
+		t.Errorf("Timed out")
+	}
 }
 
 type emptyTestModule struct{}

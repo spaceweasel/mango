@@ -1,6 +1,7 @@
 package mango
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,9 @@ type routes interface {
 // functions.
 type HookFunc func(*Context) error
 
+// RequestLogFunc is the signature for implementing router RequestLogger
+type RequestLogFunc func(*RequestLog)
+
 // Router is the main mango object. Router implements the standard
 // library http.Handler interface, so it can be used in the call to
 // http.ListenAndServe method.
@@ -30,6 +34,8 @@ type Router struct {
 	preHooks      []HookFunc
 	postHooks     []HookFunc
 	encoderEngine EncoderEngine
+	RequestLogger RequestLogFunc
+	ErrorLogger   func(error)
 }
 
 // AddRouteParamValidator adds a new validator to the collection.
@@ -94,22 +100,49 @@ func (r *Router) Del(pattern string, handlerFunc ContextHandlerFunc) {
 // ServeHTTP dispatches the request to the handler whose pattern
 // matches the request URL.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	//log.Printf("INCOMING REQUEST - %v: %v\n", req.Method, req.URL.String())
+	resp := NewWatchedResponse(w)
+	reqLog := NewRequestLog(req)
+	defer func() {
+		if r.RequestLogger == nil {
+			return
+		}
+		reqLog.stop()
+		reqLog.BytesOut = resp.byteCount
+		reqLog.Status = resp.status
+		// don't let logging hinder sending response
+		go r.RequestLogger(reqLog)
+	}()
+	defer func() {
+		// although the calling code handles panics, we'll do it
+		// here so the RequestLogger can capture it too.
+		if rec := recover(); rec != nil {
+			http.Error(resp, "Internal Server Error", 500)
+			if r.ErrorLogger != nil {
+				buf := make([]byte, 1<<16)
+				runtime.Stack(buf, true)
+				go func() {
+					buf = bytes.Trim(buf, "\x00")
+					err := fmt.Errorf("%v\n%s\n%s\n", rec, reqLog.CommonFormat(), buf)
+					r.ErrorLogger(err)
+				}()
+			}
+		}
+	}()
 
 	handlerFuncs, params, ok := r.routes.HandlerFuncs(req.URL.Path)
 	if !ok {
-		http.NotFound(w, req)
+		http.NotFound(resp, req)
 		return
 	}
 	fn, ok := handlerFuncs[req.Method]
 	if !ok {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	c := &Context{
 		Request:       req,
-		Writer:        w,
+		Writer:        resp,
 		RouteParams:   params,
 		encoderEngine: r.encoderEngine}
 
@@ -123,6 +156,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			log.Printf("error running prehook (%s): %v", name, err)
 		}
 	}
+	if c.Identity != nil {
+		reqLog.UserID = c.Identity.UserID()
+	}
 
 	fn.ServeHTTP(c)
 
@@ -133,12 +169,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if c.model != nil {
 		encoder, ct, err = c.GetEncoder()
 		if err != nil {
-			//log.Printf("unable to get encoder: %v", err)
 			msg := fmt.Sprintf("Unable to encode to requested acceptable formats: %q", req.Header.Get("Accept"))
-			r.sendError(w, msg, http.StatusNotAcceptable)
+			http.Error(resp, msg, http.StatusNotAcceptable)
 			return
 		}
-		w.Header().Set("Content-Type", ct)
+		resp.Header().Set("Content-Type", ct)
 	}
 	// if c.Reader != nil {
 	// 	defer c.Reader.Close()
@@ -162,26 +197,16 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if c.status != 0 && c.status != 200 {
-		w.WriteHeader(c.status)
+		resp.WriteHeader(c.status)
 	}
 
 	if encoder != nil {
 		if err := encoder.Encode(c.model); err != nil {
-			//log.Printf("Unable to encode model: %v", err)
-			msg := "Sorry, something went wrong."
-			r.sendError(w, msg, http.StatusInternalServerError)
-			return
+			panic(fmt.Sprintf("unable to encode model: %v", err))
 		}
-
 	} else {
-		w.Write(c.payload)
+		resp.Write(c.payload)
 	}
-}
-
-func (r *Router) sendError(w http.ResponseWriter, error string, code int) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(code)
-	fmt.Fprint(w, error)
 }
 
 // AddPreHook adds a HookFunc that will be called before any handler

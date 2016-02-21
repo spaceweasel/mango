@@ -486,10 +486,65 @@ func TestWhenAcceptHeaderStarSlashStarGetEncoderUsesDefaultMediaType(t *testing.
 	}
 }
 
-//
-//
-//
-//
-//
-//
-// todo: Bind() & sendResponse()?
+func TestErrorUsesSuppliedStatusCode(t *testing.T) {
+	w := httptest.NewRecorder()
+	c := Context{Writer: w}
+	c.Error("an error string", 404)
+	want := 404
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestErrorUsesSuppliedErrorMessage(t *testing.T) {
+	w := httptest.NewRecorder()
+	c := Context{Writer: w}
+	c.Error("an error string", 404)
+	want := "an error string\n"
+	got := w.Body.String()
+	if got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestErrorSetsContentTypeToTextPlain(t *testing.T) {
+	w := httptest.NewRecorder()
+	c := Context{Writer: w}
+	c.Error("an error string", 404)
+	want := "text/plain; charset=utf-8"
+	got := w.HeaderMap.Get("Content-Type")
+	if got != want {
+		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestRedirectUsesSuppliedStatusCode(t *testing.T) {
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
+	c := Context{
+		Request: req,
+		Writer:  w,
+	}
+	c.Redirect("/here/be/dragons", 301)
+	want := 301
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestRedirectUsesSuppliedUrlToSetLocationHeader(t *testing.T) {
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
+	c := Context{
+		Request: req,
+		Writer:  w,
+	}
+	c.Redirect("/here/be/dragons", 301)
+	want := "/here/be/dragons"
+	got := w.HeaderMap.Get("Location")
+	if got != want {
+		t.Errorf("Location = %q, want %q", got, want)
+	}
+}
