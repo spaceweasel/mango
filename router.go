@@ -9,9 +9,12 @@ import (
 
 type routes interface {
 	AddHandlerFunc(pattern, method string, handlerFunc ContextHandlerFunc)
-	HandlerFuncs(path string) (map[string]ContextHandlerFunc, map[string]string, bool)
+	GetResource(path string) (*Resource, bool)
 	AddRouteParamValidator(v ParamValidator)
 	AddRouteParamValidators(validators []ParamValidator)
+	SetGlobalCORS(config CORSConfig)
+	SetCORS(pattern string, config CORSConfig)
+	AddCORS(pattern string, config CORSConfig)
 }
 
 // RequestLogFunc is the signature for implementing router RequestLogger
@@ -56,6 +59,29 @@ func NewRouter() *Router {
 	return &r
 }
 
+// SetGlobalCORS sets the CORS configuration that will be used for
+// a resource if it has no CORS configuration of its own. If the
+// resource has no CORSConfig and tree.GlobalCORSConfig is nil
+// then CORS request are treated like any other.
+func (r *Router) SetGlobalCORS(config CORSConfig) {
+	r.routes.SetGlobalCORS(config)
+}
+
+// SetCORS sets the CORS configuration that will be used for
+// the resource matching the pattern.
+// These settings override any global settings.
+func (r *Router) SetCORS(pattern string, config CORSConfig) {
+	r.routes.SetCORS(pattern, config)
+}
+
+// AddCORS sets the CORS configuration that will be used for
+// the resource matching the pattern, by merging the supplied
+// config with any globalCORSConfig.
+// SetGlobalCORS MUST be called before this method!
+func (r *Router) AddCORS(pattern string, config CORSConfig) {
+	r.routes.AddCORS(pattern, config)
+}
+
 // Get registers a new handlerFunc that will be called when HTTP GET
 // requests are made to URLs with paths that match pattern.
 // If a GET handlerFunc already exists for pattern, Get panics.
@@ -91,6 +117,20 @@ func (r *Router) Del(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "DELETE", handlerFunc)
 }
 
+// Head registers a new handlerFunc that will be called when HTTP HEAD
+// requests are made to URLs with paths that match pattern.
+// If a HEAD handlerFunc already exists for pattern, Head panics.
+func (r *Router) Head(pattern string, handlerFunc ContextHandlerFunc) {
+	r.routes.AddHandlerFunc(pattern, "HEAD", handlerFunc)
+}
+
+// Options registers a new handlerFunc that will be called when HTTP OPTIONS
+// requests are made to URLs with paths that match pattern.
+// If a OPTIONS handlerFunc already exists for pattern, Options panics.
+func (r *Router) Options(pattern string, handlerFunc ContextHandlerFunc) {
+	r.routes.AddHandlerFunc(pattern, "OPTIONS", handlerFunc)
+}
+
 // ServeHTTP dispatches the request to the handler whose pattern
 // matches the request URL.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -123,12 +163,17 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	handlerFuncs, params, ok := r.routes.HandlerFuncs(req.URL.Path)
+	resource, ok := r.routes.GetResource(req.URL.Path)
 	if !ok {
 		http.NotFound(resp, req)
 		return
 	}
-	fn, ok := handlerFuncs[req.Method]
+
+	if handleCORS(req, resp, resource) {
+		return
+	}
+
+	fn, ok := resource.Handlers[req.Method]
 	if !ok {
 		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -137,7 +182,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := &Context{
 		Request:       req,
 		Writer:        resp,
-		RouteParams:   params,
+		RouteParams:   resource.RouteParams,
 		encoderEngine: r.encoderEngine,
 	}
 

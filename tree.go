@@ -15,8 +15,9 @@ func newTree() *tree {
 }
 
 type tree struct {
-	root           *treenode
-	paramValidator RouteParamValidators
+	root             *treenode
+	paramValidator   RouteParamValidators
+	GlobalCORSConfig *CORSConfig
 }
 
 // AddRouteParamValidator adds a new validator to the collection.
@@ -47,6 +48,37 @@ func (t *tree) Root() *treenode {
 	return t.root
 }
 
+// SetGlobalCORS sets the CORS configuration that will be used for
+// a resource if it has no CORS configuration of its own. If the
+// resource has no CORSConfig and tree.GlobalCORSConfig is nil
+// then CORS request are treated like any other.
+func (t *tree) SetGlobalCORS(config CORSConfig) {
+	t.GlobalCORSConfig = &config
+}
+
+// SetCORS sets the CORS configuration that will be used for
+// the resource matching the pattern.
+// These settings override any global settings.
+func (t *tree) SetCORS(pattern string, config CORSConfig) {
+	node, _ := t.Root().addNode(pattern)
+	node.CORSConfig = &config
+}
+
+// AddCORS sets the CORS configuration that will be used for
+// the resource matching the pattern, by merging the supplied
+// config with any globalCORSConfig.
+// SetGlobalCORS MUST be called before this method!
+func (t *tree) AddCORS(pattern string, config CORSConfig) {
+	node, _ := t.Root().addNode(pattern)
+	if t.GlobalCORSConfig == nil {
+		node.CORSConfig = &config
+		return
+	}
+	c := t.GlobalCORSConfig.clone()
+	c.merge(config)
+	node.CORSConfig = c
+}
+
 // AddHandlerFunc adds a new handlerFunc for the supplied pattern and method.
 // If a handlerFunc already exists for the pattern-method combination,
 // AddHandlerFunc panics.
@@ -62,24 +94,38 @@ func (t *tree) AddHandlerFunc(pattern, method string, handlerFunc ContextHandler
 	node.handlers[method] = handlerFunc
 }
 
-// HandlerFuncs traverses the tree looking for a leaf nodes which match the supplied path.
-// If found, HandlerFuncs returns the handlers map held at the leaf node.
+// Resource is a container holding the Handler functions for
+// the various HTTP methods, a RouteParams map of values obtained
+// from the request path and a CORS configuration.
+// The CORS config may be nil.
+type Resource struct {
+	Handlers    map[string]ContextHandlerFunc
+	RouteParams map[string]string
+	CORSConfig  *CORSConfig
+}
+
+// GetResource traverses the tree looking for a leaf nodes which match the supplied path.
+// If found, GetResource returns the resource held at the leaf node.
 // If the leaf node journey involves parameter nodes, then associated values
-// will be extracted from the path and added to the returned routeParams map.
-func (t *tree) HandlerFuncs(path string) (handlers map[string]ContextHandlerFunc, routeParams map[string]string, found bool) {
+// will be extracted from the path and added to the resource RouteParams map.
+func (t *tree) GetResource(path string) (*Resource, bool) {
 	n, pValues, ok := t.search(t.Root().children, path)
 	if !ok {
-		return
+		return nil, false
 	}
-	found = true
-	routeParams = make(map[string]string)
+	res := Resource{}
+	res.RouteParams = make(map[string]string)
 	if n.paramNames != nil {
 		for i, n := range n.paramNames.items {
-			routeParams[n] = pValues.items[i]
+			res.RouteParams[n] = pValues.items[i]
 		}
 	}
-	handlers = n.handlers
-	return
+	res.Handlers = n.handlers
+	res.CORSConfig = n.CORSConfig
+	if res.CORSConfig == nil {
+		res.CORSConfig = t.GlobalCORSConfig
+	}
+	return &res, true
 }
 
 func (t *tree) search(nodes []*treenode, path string) (*treenode, *stringList, bool) {
@@ -143,6 +189,7 @@ type treenode struct {
 	paramNames      *stringList
 	isParam         bool
 	paramConstraint string
+	CORSConfig      *CORSConfig
 }
 
 func (n *treenode) insert(child *treenode) {

@@ -13,8 +13,10 @@ import (
 )
 
 type mockRoutes struct {
-	routes     map[string]map[string]ContextHandlerFunc
-	validators map[string]ParamValidator
+	routes           map[string]map[string]ContextHandlerFunc
+	validators       map[string]ParamValidator
+	corsConfigs      map[string]CORSConfig
+	globalCORSConfig CORSConfig
 }
 
 func (m *mockRoutes) TestValidators(s, constraint string) bool {
@@ -37,9 +39,12 @@ func (m *mockRoutes) AddHandlerFunc(pattern, method string, handlerFunc ContextH
 	m.routes[pattern][method] = handlerFunc
 }
 
-func (m *mockRoutes) HandlerFuncs(path string) (map[string]ContextHandlerFunc, map[string]string, bool) {
+func (m *mockRoutes) GetResource(path string) (*Resource, bool) {
 	hm, ok := m.routes[path]
-	return hm, nil, ok
+	res := Resource{
+		Handlers: hm,
+	}
+	return &res, ok
 }
 
 func (m *mockRoutes) AddRouteParamValidator(v ParamValidator) {
@@ -55,10 +60,23 @@ func (m *mockRoutes) AddRouteParamValidators(validators []ParamValidator) {
 	}
 }
 
+func (m *mockRoutes) SetGlobalCORS(config CORSConfig) {
+	m.globalCORSConfig = config
+}
+
+func (m *mockRoutes) SetCORS(pattern string, config CORSConfig) {
+	m.corsConfigs[pattern] = config
+}
+
+func (m *mockRoutes) AddCORS(pattern string, config CORSConfig) {
+	m.corsConfigs[pattern] = config
+}
+
 func newMockRoutes() *mockRoutes {
 	mr := mockRoutes{}
 	mr.routes = make(map[string]map[string]ContextHandlerFunc)
 	mr.validators = make(map[string]ParamValidator)
+	mr.corsConfigs = make(map[string]CORSConfig)
 	return &mr
 }
 
@@ -67,11 +85,11 @@ func TestGetAddsHandlerToRoutes(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
 	rtr.Get("/test", testFunc)
-	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
 	}
-	h := handlers["GET"]
+	h := resource.Handlers["GET"]
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
@@ -83,11 +101,11 @@ func TestPostAddsHandlerToRoutes(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
 	rtr.Post("/test", testFunc)
-	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
 	}
-	h := handlers["POST"]
+	h := resource.Handlers["POST"]
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
@@ -99,11 +117,11 @@ func TestPutAddsHandlerToRoutes(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
 	rtr.Put("/test", testFunc)
-	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
 	}
-	h := handlers["PUT"]
+	h := resource.Handlers["PUT"]
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
@@ -115,11 +133,11 @@ func TestPatchAddsHandlerToRoutes(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
 	rtr.Patch("/test", testFunc)
-	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
 	}
-	h := handlers["PATCH"]
+	h := resource.Handlers["PATCH"]
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
@@ -131,11 +149,43 @@ func TestDeleteAddsHandlerToRoutes(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
 	rtr.Del("/test", testFunc)
-	handlers, _, ok := rtr.routes.HandlerFuncs("/test")
+	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
 	}
-	h := handlers["DELETE"]
+	h := resource.Handlers["DELETE"]
+	got := extractFnName(h)
+	if got != want {
+		t.Errorf("Handler function = %q, want %q", got, want)
+	}
+}
+
+func TestHeadAddsHandlerToRoutes(t *testing.T) {
+	want := "testFunc"
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.Head("/test", testFunc)
+	resource, ok := rtr.routes.GetResource("/test")
+	if !ok {
+		t.Errorf("Handler not added")
+	}
+	h := resource.Handlers["HEAD"]
+	got := extractFnName(h)
+	if got != want {
+		t.Errorf("Handler function = %q, want %q", got, want)
+	}
+}
+
+func TestOptionsAddsHandlerToRoutes(t *testing.T) {
+	want := "testFunc"
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.Options("/test", testFunc)
+	resource, ok := rtr.routes.GetResource("/test")
+	if !ok {
+		t.Errorf("Handler not added")
+	}
+	h := resource.Handlers["OPTIONS"]
 	got := extractFnName(h)
 	if got != want {
 		t.Errorf("Handler function = %q, want %q", got, want)
@@ -701,8 +751,8 @@ func TestRegisterModulesWithSingleModuleRegistersRoutes(t *testing.T) {
 	r.RegisterModules([]Registerer{
 		singleRouteTestModule{},
 	})
-	s, _, _ := r.routes.HandlerFuncs("/single")
-	got := len(s)
+	s, _ := r.routes.GetResource("/single")
+	got := len(s.Handlers)
 	if got != want {
 		t.Errorf("Route count = %d, want %d", got, want)
 	}
@@ -717,9 +767,9 @@ func TestRegisterModulesWithMultipleModulesRegistersRoutes(t *testing.T) {
 		singleRouteTestModule{},
 		multiRouteTestModule{},
 	})
-	s, _, _ := r.routes.HandlerFuncs("/single")
-	m, _, _ := r.routes.HandlerFuncs("/multi")
-	got := len(s) + len(m)
+	s, _ := r.routes.GetResource("/single")
+	m, _ := r.routes.GetResource("/multi")
+	got := len(s.Handlers) + len(m.Handlers)
 
 	if got != want {
 		t.Errorf("Route count = %d, want %d", got, want)
@@ -736,9 +786,9 @@ func TestRegisterModulesDoesNotAffectExisingRegistrations(t *testing.T) {
 		multiRouteTestModule{},
 	})
 
-	s, _, _ := r.routes.HandlerFuncs("/single")
-	m, _, _ := r.routes.HandlerFuncs("/multi")
-	got := len(s) + len(m)
+	s, _ := r.routes.GetResource("/single")
+	m, _ := r.routes.GetResource("/multi")
+	got := len(s.Handlers) + len(m.Handlers)
 
 	if got != want {
 		t.Errorf("Route count = %d, want %d", got, want)
@@ -1085,6 +1135,97 @@ func TestRouterErrorLoggingMsgHasReqDetailAsSecondLineWhenUnRecoveredPanic(t *te
 		t.Errorf("Timed out")
 	}
 }
+
+func TestSetCORSForwardsToTree(t *testing.T) {
+	want := "http://greencheese.com"
+
+	mr := newMockRoutes()
+	r := Router{
+		routes: mr,
+	}
+	config := CORSConfig{
+		Origins: []string{"http://greencheese.com"},
+		Methods: []string{"POST", "PATCH"},
+		Headers: []string{"X-Cheese", "X-Mangoes"},
+	}
+	r.SetCORS("/mango", config)
+
+	c, ok := mr.corsConfigs["/mango"]
+	if !ok {
+		t.Errorf("CORS Config not sent")
+		return
+	}
+
+	got := strings.Join(c.Origins, ", ")
+
+	if got != want {
+		t.Errorf("Origins = %q, want %q", got, want)
+	}
+}
+
+func TestSetGlobalCORSForwardsToTree(t *testing.T) {
+	want := "http://greencheese.com"
+
+	mr := newMockRoutes()
+	r := Router{
+		routes: mr,
+	}
+	config := CORSConfig{
+		Origins: []string{"http://greencheese.com"},
+		Methods: []string{"POST", "PATCH"},
+		Headers: []string{"X-Cheese", "X-Mangoes"},
+	}
+	r.SetGlobalCORS(config)
+
+	gc := mr.globalCORSConfig
+	got := strings.Join(gc.Origins, ", ")
+
+	if got != want {
+		t.Errorf("Origins = %q, want %q", got, want)
+	}
+}
+
+func TestAddCORSForwardsToTree(t *testing.T) {
+	want := "http://greencheese.com"
+
+	mr := newMockRoutes()
+	r := Router{
+		routes: mr,
+	}
+	config := CORSConfig{
+		Origins: []string{"http://greencheese.com"},
+		Methods: []string{"POST", "PATCH"},
+		Headers: []string{"X-Cheese", "X-Mangoes"},
+	}
+	r.AddCORS("/mango", config)
+
+	c, ok := mr.corsConfigs["/mango"]
+	if !ok {
+		t.Errorf("CORS Config not sent")
+		return
+	}
+
+	got := strings.Join(c.Origins, ", ")
+
+	if got != want {
+		t.Errorf("Origins = %q, want %q", got, want)
+	}
+}
+
+// TODO:
+// func TestRouterCallsHandleCORS(t *testing.T) {
+//
+// 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+// 	req.RemoteAddr = "127.0.0.1"
+// 	w := httptest.NewRecorder()
+// 	got := ""
+// 	r := Router{}
+// 	r.routes = newMockRoutes()
+// 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+// 		c.RespondWith("A mango in the hand")
+// 	})
+// 	r.ServeHTTP(w, req)
+// }
 
 type emptyTestModule struct{}
 
