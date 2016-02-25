@@ -20,18 +20,19 @@ func NewWatchedResponse(w http.ResponseWriter) *WatchedResponse {
 // purpose is to collect data on the information written to provide
 // more informative logging.
 type WatchedResponse struct {
-	rw        http.ResponseWriter
-	byteCount int
-	status    int
-	readonly  bool
-	responded bool
+	rw          http.ResponseWriter
+	byteCount   int
+	status      int
+	readonly    bool
+	responded   bool
+	headersSent bool
 }
 
 // Header returns the header map that will be sent by
 // WriteHeader.
 // See http.ResponseWriter interface for more information.
 func (w *WatchedResponse) Header() http.Header {
-	if w.readonly {
+	if w.headersSent || w.readonly {
 		// return a copy of the map
 		h := http.Header{}
 		origMap := map[string][]string(w.rw.Header())
@@ -50,9 +51,10 @@ func (w *WatchedResponse) Header() http.Header {
 // recorded to provide more informative logging.
 // See http.ResponseWriter interface for more information.
 func (w *WatchedResponse) WriteHeader(status int) {
-	if w.readonly {
+	if w.headersSent || w.readonly {
 		return
 	}
+	w.headersSent = true
 	w.responded = true
 	w.status = status
 	w.rw.WriteHeader(status)
@@ -66,9 +68,11 @@ func (w *WatchedResponse) Write(b []byte) (int, error) {
 	if w.readonly {
 		return 0, fmt.Errorf("write method has been called already")
 	}
-	w.responded = true
+	// TODO: check the error before updating anything
 	i, err := w.rw.Write(b)
 	w.byteCount += i
+	w.headersSent = true
+	w.responded = true
 	return i, err
 }
 

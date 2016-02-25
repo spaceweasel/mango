@@ -296,6 +296,18 @@ func TestWatchedResponseSetsHeader(t *testing.T) {
 	}
 }
 
+func TestWatchedResponseWriteHeaderSetsHeadersSentFlag(t *testing.T) {
+	want := true
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.WriteHeader(404)
+	got := resp.headersSent
+
+	if got != want {
+		t.Errorf("HeadersSent = %t, want %t", got, want)
+	}
+}
+
 func TestWatchedResponseWriteHeaderSetsRespondedFlag(t *testing.T) {
 	want := true
 	w := httptest.NewRecorder()
@@ -327,6 +339,19 @@ func TestWatchedResponseWriteHeaderIsIgnoredWhenReadonly(t *testing.T) {
 	w := httptest.NewRecorder()
 	resp := NewWatchedResponse(w)
 	resp.readonly = true
+	resp.WriteHeader(404)
+	got := w.Code
+
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestWatchedResponseWriteHeaderIsIgnoredWhenHeadersSent(t *testing.T) {
+	want := 200
+	w := httptest.NewRecorder()
+	resp := NewWatchedResponse(w)
+	resp.headersSent = true
 	resp.WriteHeader(404)
 	got := w.Code
 

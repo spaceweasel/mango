@@ -152,7 +152,6 @@ func handleCORS(req *http.Request, w http.ResponseWriter, resource *Resource) (p
 			maStr := strconv.Itoa((*corsConf).MaxAge)
 			w.Header().Set("Access-Control-Max-Age", maStr)
 		}
-		
 		preflight = true
 	} else {
 		// normal request
@@ -164,9 +163,6 @@ func handleCORS(req *http.Request, w http.ResponseWriter, resource *Resource) (p
 	w.Header().Add("Vary", "Origin")
 	if (*corsConf).Credentials {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-	}
-	if(preflight){
-		w.WriteHeader(http.StatusOK)
 	}
 	return
 }

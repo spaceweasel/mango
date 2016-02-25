@@ -44,6 +44,6 @@ func hello(c *mango.Context) {
 - [x] Add methods to allow custom encoders to be added
 - [x] Add methods to allow custom route parameter validators to be added
 - [ ] Add more documentation
-- [ ] Add OPTIONS handler for CORS support
-- [ ] Add OPTIONS methods to test browser
+- [x] Add OPTIONS handler for CORS support
+- [x] Add OPTIONS methods to test browser
 - [ ] Add more route parameter validators
