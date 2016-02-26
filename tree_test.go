@@ -925,6 +925,50 @@ func TestTreeAddCORSCredentialsAndMaxAgeOverrideGlobalSetting(t *testing.T) {
 	}
 }
 
+func TestTreeStructureWithSingleStaticRoute(t *testing.T) {
+	want := `>Label: "/Cheese/sleeper"	Handlers [GET: testFunc]	 ParamNames []
+`
+	tree := tree{}
+	tree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
+	got := tree.Structure()
+	if got != want {
+		t.Errorf("Value = %q, want %q", got, want)
+	}
+}
+
+func TestTreeStructureWithTwoStaticRoutesWithDifferentInitialSegment(t *testing.T) {
+	want := `>Label: "/"		` + `
+	>Label: "Onions/spring"	Handlers [GET: testFunc2]	 ParamNames []` + `
+	>Label: "Cheese/sleeper"	Handlers [GET: testFunc]	 ParamNames []
+`
+	tree := tree{}
+	tree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
+	tree.AddHandlerFunc("/Onions/spring", "GET", testFunc2)
+	got := tree.Structure()
+	if got != want {
+		t.Errorf("Value = %q, want %q", got, want)
+	}
+}
+
+func TestTreeStructureWithTwoStaticRoutesWithParametizedSegments(t *testing.T) {
+	want := `>Label: "/"		` + `
+	>Label: "Onions/"		` + `
+		>Param: ""		` + `
+			>Label: "/spring"	Handlers [GET: testFunc2]	 ParamNames [season,]
+	>Label: "Cheese/"		` + `
+		>Param: ""		` + `
+			>Label: "/sleeper/"		` + `
+				>Param: ""	Handlers [GET: testFunc]	 ParamNames [eyeball,desire,]
+`
+	tree := tree{}
+	tree.AddHandlerFunc("/Cheese/{desire}/sleeper/{eyeball}", "GET", testFunc)
+	tree.AddHandlerFunc("/Onions/{season}/spring", "GET", testFunc2)
+	got := tree.Structure()
+	if got != want {
+		t.Errorf("Value = %q, want %q", got, want)
+	}
+}
+
 // mocks
 
 type mockRouteParamsValidator struct {

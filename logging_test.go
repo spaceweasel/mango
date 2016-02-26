@@ -54,6 +54,18 @@ func TestResponseLogCombinedFormat(t *testing.T) {
 	}
 }
 
+func TestNowUtcReturnsTimeNow(t *testing.T) {
+	want := 0
+	now := time.Now().UTC()
+	nowFromFn := nowUTC()
+	secs := nowFromFn.Sub(now).Seconds()
+	got := int(secs)
+
+	if got != want {
+		t.Errorf("Difference in seconds = %d, want %d", got, want)
+	}
+}
+
 func TestStopSetsFinishTimeToCurrentTime(t *testing.T) {
 	now := time.Now().UTC()
 	nowUTC = func() time.Time {

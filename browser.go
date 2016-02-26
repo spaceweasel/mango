@@ -79,10 +79,10 @@ func (b *Browser) PutS(url, body string, headers http.Header) (*httptest.Respons
 	return b.Put(url, bytes, headers)
 }
 
-// Del simulates an HTTP DELETE request to the server.
+// Delete simulates an HTTP DELETE request to the server.
 // The response can be examined afterwards to check status, headers
 // and content.
-func (b *Browser) Del(url string, headers http.Header) (*httptest.ResponseRecorder, error) {
+func (b *Browser) Delete(url string, headers http.Header) (*httptest.ResponseRecorder, error) {
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return nil, err

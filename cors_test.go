@@ -193,6 +193,26 @@ func TestHandleCORSAddsVaryOriginHeaderWhenRequestOriginAllowed(t *testing.T) {
 	}
 }
 
+func TestHandleCORSDoesNotAddAllowOriginHeaderWhenRequestOriginNotAllowed(t *testing.T) {
+	want := ""
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://bluecheese.com")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+		},
+	}
+
+	handleCORS(req, w, &res)
+
+	got := w.HeaderMap.Get("Access-Control-Allow-Origin")
+
+	if got != want {
+		t.Errorf("Access-Control-Allow-Origin = %q, want %q", got, want)
+	}
+}
+
 func TestHandleCORSDoesNotSetAllowCredentialsHeaderWhenResourceDoesNotAllowCredentials(t *testing.T) {
 	want := ""
 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
@@ -232,7 +252,7 @@ func TestHandleCORSSetsAllowCredentialsHeaderWhenResourceAllowsCredentials(t *te
 	}
 }
 
-func TestHandleCORSincludesExposedHeadersWhenResourceContainedInConfig(t *testing.T) {
+func TestHandleCORSIncludesExposedHeadersWhenContainedInResourceConfig(t *testing.T) {
 	want := "X-Cheese, X-Mangoes"
 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
 	req.Header.Set("Origin", "http://greencheese.com")
@@ -257,7 +277,11 @@ func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasNoACRequest
 	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
 	req.Header.Set("Origin", "http://greencheese.com")
 	w := httptest.NewRecorder()
-	res := Resource{}
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+		},
+	}
 	handleCORS(req, w, &res)
 
 	got := w.HeaderMap.Get("Access-Control-Allow-Origin")
@@ -273,7 +297,12 @@ func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasACRequestMe
 	req.Header.Set("Origin", "http://greencheese.com")
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	w := httptest.NewRecorder()
-	res := Resource{}
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"GET"},
+		},
+	}
 	handleCORS(req, w, &res)
 
 	got := w.HeaderMap.Get("Access-Control-Allow-Origin")
@@ -289,7 +318,15 @@ func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasNoACRequest
 	req.Header.Set("Origin", "http://greencheese.com")
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	w := httptest.NewRecorder()
-	res := Resource{}
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
 	handleCORS(req, w, &res)
 
 	got := w.HeaderMap.Get("Access-Control-Allow-Origin")
@@ -311,6 +348,9 @@ func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasACRequestHe
 			Origins: []string{"http://greencheese.com"},
 			Methods: []string{"POST", "PATCH"},
 			Headers: []string{"X-Cheese", "X-Biscuits"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
 		},
 	}
 	handleCORS(req, w, &res)

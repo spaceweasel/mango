@@ -135,12 +135,12 @@ func (c *Context) Redirect(urlStr string, code int) {
 	http.Redirect(c.Writer, c.Request, urlStr, code)
 }
 
-// Render executes a template using the supplied data.
-// Request handlers should cease execution after calling this method.
-// TODO: Not yet implemented
-func (c *Context) Render(tmpl string, data interface{}) {
-	panic("not yet implemented")
-}
+// // Render executes a template using the supplied data.
+// // Request handlers should cease execution after calling this method.
+// // TODO: Not yet implemented
+// func (c *Context) Render(tmpl string, data interface{}) {
+// 	panic("not yet implemented")
+// }
 
 //
 // func (c *Context) sendResponse() {

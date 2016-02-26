@@ -27,12 +27,13 @@ type RequestLogFunc func(*RequestLog)
 // rather than creating a new uninitialised instance.
 // TODO: Add more info here.
 type Router struct {
-	routes        routes
-	preHooks      []ContextHandlerFunc
-	postHooks     []ContextHandlerFunc
-	encoderEngine EncoderEngine
-	RequestLogger RequestLogFunc
-	ErrorLogger   func(error)
+	routes                   routes
+	preHooks                 []ContextHandlerFunc
+	postHooks                []ContextHandlerFunc
+	encoderEngine            EncoderEngine
+	RequestLogger            RequestLogFunc
+	ErrorLogger              func(error)
+	AutoPopulateOptionsAllow bool
 }
 
 // AddRouteParamValidator adds a new validator to the collection.
@@ -56,6 +57,7 @@ func NewRouter() *Router {
 	r := Router{}
 	r.routes = newTree()
 	r.encoderEngine = newEncoderEngine()
+	r.AutoPopulateOptionsAllow = true
 	return &r
 }
 
@@ -110,10 +112,10 @@ func (r *Router) Patch(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "PATCH", handlerFunc)
 }
 
-// Del registers a new handlerFunc that will be called when HTTP DELETE
+// Delete registers a new handlerFunc that will be called when HTTP DELETE
 // requests are made to URLs with paths that match pattern.
-// If a DELETE handlerFunc already exists for pattern, Del panics.
-func (r *Router) Del(pattern string, handlerFunc ContextHandlerFunc) {
+// If a DELETE handlerFunc already exists for pattern, Delete panics.
+func (r *Router) Delete(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "DELETE", handlerFunc)
 }
 
@@ -175,6 +177,14 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	fn, ok := resource.Handlers[req.Method]
 	if !ok {
+		if r.AutoPopulateOptionsAllow {
+			// if a dedicated OPTIONS handler hasn't been added to the resource
+			// then just return with ALLOW header.
+			for k := range resource.Handlers {
+				resp.Header().Add("Allow", k)
+			}
+			return
+		}
 		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}

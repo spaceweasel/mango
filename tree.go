@@ -2,7 +2,6 @@ package mango
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"runtime"
 	"strings"
@@ -167,12 +166,6 @@ func (t *tree) search(nodes []*treenode, path string) (*treenode, *stringList, b
 	return nil, nil, false
 }
 
-func (t *tree) Print() {
-	for _, n := range t.Root().children {
-		n.Print(0)
-	}
-}
-
 func (t *tree) GetStats() treeStats {
 	stats := treeStats{totalNodes: t.Root().Count()}
 	return stats
@@ -316,7 +309,16 @@ func (n *treenode) paramChild(constraint string) *treenode {
 	return nil
 }
 
-func (n *treenode) Print(l int) {
+func (t *tree) Structure() string {
+	s := ""
+	for _, n := range t.Root().children {
+		s += n.structure(0)
+	}
+	return s
+}
+
+func (n *treenode) structure(l int) string {
+	s := ""
 	tab := strings.Repeat("\t", l)
 	handlers := ""
 	pns := ""
@@ -337,14 +339,16 @@ func (n *treenode) Print(l int) {
 	}
 
 	if n.isParam {
-		log.Printf("%s>Label: %q\t%s\t%s", tab, n.label, handlers, pns)
+		s += fmt.Sprintf("%s>Param: %q\t%s\t%s\n", tab, n.paramConstraint, handlers, pns)
 	} else {
-		log.Printf("%s>Param: %q\t%s\t%s", tab, n.paramConstraint, handlers, pns)
+		s += fmt.Sprintf("%s>Label: %q\t%s\t%s\n", tab, n.label, handlers, pns)
 	}
+
 	l++
 	for _, n := range n.children {
-		n.Print(l)
+		s += n.structure(l)
 	}
+	return s
 }
 
 func (n *treenode) Count() int {

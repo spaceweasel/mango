@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -148,7 +149,7 @@ func TestDeleteAddsHandlerToRoutes(t *testing.T) {
 	want := "testFunc"
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.Del("/test", testFunc)
+	rtr.Delete("/test", testFunc)
 	resource, ok := rtr.routes.GetResource("/test")
 	if !ok {
 		t.Errorf("Handler not added")
@@ -211,7 +212,7 @@ func TestWhenNoMatchingHandlerServeHTTPReturns405MethodNotAllowed(t *testing.T) 
 	want := 405
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.Del("/test", testFunc)
+	rtr.Delete("/test", testFunc)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
@@ -220,6 +221,25 @@ func TestWhenNoMatchingHandlerServeHTTPReturns405MethodNotAllowed(t *testing.T) 
 	got := w.Code
 	if got != want {
 		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
+func TestWhenNoMatchingHandlerForOPTIONSRequestAndAutoPopulateOptionsAllow(t *testing.T) {
+	want := "DELETE, GET, POST"
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AutoPopulateOptionsAllow = true
+	rtr.Get("/test", testFunc)
+	rtr.Post("/test", testFunc)
+	rtr.Delete("/test", testFunc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("OPTIONS", "/test", nil)
+	rtr.ServeHTTP(w, req)
+	sort.Strings(w.HeaderMap["Allow"])
+	got := strings.Join(w.HeaderMap["Allow"], ", ")
+	if got != want {
+		t.Errorf("Allow = %q, want %q", got, want)
 	}
 }
 
@@ -729,6 +749,15 @@ func TestNewRouterInitialisesEncoderEngineWithDefaultMediaType(t *testing.T) {
 	}
 }
 
+func TestNewRouterSetsAutoPopulateOptionsAllowToTrue(t *testing.T) {
+	want := true
+	r := NewRouter()
+	got := r.AutoPopulateOptionsAllow
+	if got != want {
+		t.Errorf("AutoPopulateOptionsAllow = %t, want %t", got, want)
+	}
+}
+
 func TestRegisterModulesWithEmptyModuleRegistersNoNewRoutes(t *testing.T) {
 	want := 0
 	r := Router{}
@@ -1068,6 +1097,30 @@ func TestRouterRequestLoggingWhenUnRecoveredPanic(t *testing.T) {
 	case <-time.After(time.Second * 3):
 		t.Errorf("Timed out")
 	}
+}
+
+func TestRouterRequestLoggerIsUpdatedWhenAuthenticated(t *testing.T) {
+	want := "Mungo"
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+	got := ""
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		got = l.UserID
+		if got != want {
+			t.Errorf("UserID = %q, want %q", got, want)
+		}
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		//c.RespondWith("A mango in the hand")
+	})
+	r.AddPreHook(func(c *Context) {
+		c.Identity = BasicIdentity{Username: "Mungo"}
+	})
+	r.ServeHTTP(w, req)
 }
 
 func TestRouterErrorLoggingMsgHasSummaryAsFirstLineWhenUnRecoveredPanic(t *testing.T) {

@@ -109,6 +109,17 @@ func TestBrowserGetReturnsBody(t *testing.T) {
 	}
 }
 
+func TestBrowserGetReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	_, err := b.Get("::/mangos", nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
 // Post
 func TestBrowserPostSendsRequestWithCorrectURLToRouter(t *testing.T) {
 	want := "/mangos"
@@ -166,6 +177,18 @@ func TestBrowserPostReturnsBody(t *testing.T) {
 	got := resp.Body.String()
 	if got != want {
 		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserPostReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	bytes := bytes.NewBufferString("mangos")
+	_, err := b.Post("::/mangos", bytes, nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
 	}
 }
 
@@ -241,6 +264,18 @@ func TestBrowserPutReturnsBody(t *testing.T) {
 	}
 }
 
+func TestBrowserPutReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	bytes := bytes.NewBufferString("mangos")
+	_, err := b.Put("::/mangos", bytes, nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
 // PutS
 func TestBrowserPutSReturnsBody(t *testing.T) {
 	want := "40 times around the deck is a mile"
@@ -254,62 +289,73 @@ func TestBrowserPutSReturnsBody(t *testing.T) {
 }
 
 // Delete
-func TestBrowserDelSendsRequestWithCorrectURLToRouter(t *testing.T) {
+func TestBrowserDeleteSendsRequestWithCorrectURLToRouter(t *testing.T) {
 	want := "/mangos"
 	r := NewMockRouter(200)
 	b := NewBrowser(r)
-	b.Del("/mangos", nil)
+	b.Delete("/mangos", nil)
 	got := r.req.URL.String()
 	if got != want {
 		t.Errorf("URL = %q, want %q", got, want)
 	}
 }
 
-func TestBrowserDelSendsRequestWithHeadersToRouter(t *testing.T) {
+func TestBrowserDeleteSendsRequestWithHeadersToRouter(t *testing.T) {
 	want := "application/json"
 	r := NewMockRouter(200)
 	b := NewBrowser(r)
 	hdrs := http.Header{}
 	hdrs.Set("Accept", "application/json")
-	b.Del("/mangos", hdrs)
+	b.Delete("/mangos", hdrs)
 	got := r.req.Header.Get("Accept")
 	if got != want {
 		t.Errorf("Accept header = %q, want %q", got, want)
 	}
 }
 
-func TestBrowserDelReturnsStatusCode(t *testing.T) {
+func TestBrowserDeleteReturnsStatusCode(t *testing.T) {
 	want := 404
 	r := NewMockRouter(404)
 	b := NewBrowser(r)
-	resp, _ := b.Del("/mangos", nil)
+	resp, _ := b.Delete("/mangos", nil)
 	got := resp.Code
 	if got != want {
 		t.Errorf("Status = %d, want %d", got, want)
 	}
 }
 
-func TestBrowserDelReturnsHeaders(t *testing.T) {
+func TestBrowserDeleteReturnsHeaders(t *testing.T) {
 	want := "/the/moon"
 	r := NewMockRouter(201)
 	r.respHeader.Set("Location", "/the/moon")
 	b := NewBrowser(r)
-	resp, _ := b.Del("/mangos", nil)
+	resp, _ := b.Delete("/mangos", nil)
 	got := resp.HeaderMap.Get("Location")
 	if got != want {
 		t.Errorf("Location header = %q, want %q", got, want)
 	}
 }
 
-func TestBrowserDelReturnsBody(t *testing.T) {
+func TestBrowserDeleteReturnsBody(t *testing.T) {
 	want := "40 times around the deck is a mile"
 	r := NewMockRouter(200)
 	r.respBody = "40 times around the deck is a mile"
 	b := NewBrowser(r)
-	resp, _ := b.Del("/mangos", nil)
+	resp, _ := b.Delete("/mangos", nil)
 	got := resp.Body.String()
 	if got != want {
 		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserDeleteReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	_, err := b.Delete("::/mangos", nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
 	}
 }
 
@@ -373,6 +419,18 @@ func TestBrowserPatchReturnsBody(t *testing.T) {
 	}
 }
 
+func TestBrowserPatchReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	bytes := bytes.NewBufferString("mangos")
+	_, err := b.Patch("::/mangos", bytes, nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
 // PatchS
 func TestBrowserPatchSReturnsBody(t *testing.T) {
 	want := "40 times around the deck is a mile"
@@ -433,6 +491,17 @@ func TestBrowserHeadReturnsHeaders(t *testing.T) {
 	}
 }
 
+func TestBrowserHeadReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	_, err := b.Head("::/mangos", nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
+	}
+}
+
 // Options
 func TestBrowserOptionsSendsRequestWithCorrectURLToRouter(t *testing.T) {
 	want := "/mangos"
@@ -490,5 +559,16 @@ func TestBrowserOptionsReturnsBody(t *testing.T) {
 	got := resp.Body.String()
 	if got != want {
 		t.Errorf("Body = %q, want %q", got, want)
+	}
+}
+
+func TestBrowserOptionsReturnsErrorWhenInvalidURL(t *testing.T) {
+	want := "parse ::/mangos: missing protocol scheme"
+	r := NewMockRouter(200)
+	b := NewBrowser(r)
+	_, err := b.Options("::/mangos", nil)
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
 	}
 }
