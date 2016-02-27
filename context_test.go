@@ -270,6 +270,23 @@ func TestContentDecoderReturnsDecoderBasedOnContentType(t *testing.T) {
 	}
 }
 
+func TestContentDecoderCanReturnDecoderIgnoringContentTypeParameters(t *testing.T) {
+	want := "mockDecoder"
+	ee := &mockEncoderEngine{}
+	req, _ := http.NewRequest("POST", "someurl", nil)
+	req.Header.Set("Content-Type", "test/test ; charset = UTF-8")
+	c := Context{
+		Request:       req,
+		encoderEngine: ee,
+	}
+	decoder, _ := c.contentDecoder()
+
+	got := reflect.TypeOf(decoder).Name()
+	if got != want {
+		t.Errorf("Decoder = %q, want %q", got, want)
+	}
+}
+
 func TestBindReturnsErrorIfNoSuitableDecoder(t *testing.T) {
 	want := "unable to bind: no decoder for content-type: test/mango"
 	ee := &mockEncoderEngine{}
@@ -349,6 +366,28 @@ func TestBindingWithJsonBody(t *testing.T) {
 	}
 }
 
+func TestBindingWithJsonBodyAndNoContentTypeSet(t *testing.T) {
+	want := "Mango-34"
+	json := `   {"id":34,"name":"Mango"}`
+	r, _ := http.NewRequest("POST", "someurl", bytes.NewBufferString(json))
+  r.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	c := Context{
+		Request:       r,
+		encoderEngine: newEncoderEngine(),
+	}
+	type data struct {
+		Id   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	decoded := data{}
+	c.Bind(&decoded)
+
+	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.Id)
+	if got != want {
+		t.Errorf("Bind() = %q, want %q", got, want)
+	}
+}
+
 func TestAcceptableMediaTypesSplitsHeaderToSlice(t *testing.T) {
 	want := "text/plain|text/html"
 	req, _ := http.NewRequest("GET", "someurl", nil)
@@ -367,6 +406,20 @@ func TestAcceptableMediaTypesReturnsTrimmedTypes(t *testing.T) {
 	want := "text/plain|text/html"
 	req, _ := http.NewRequest("GET", "someurl", nil)
 	req.Header.Set("Accept", "text/plain , text/html ")
+	c := Context{
+		Request: req,
+	}
+	types := c.acceptableMediaTypes()
+	got := strings.Join(types, "|")
+	if got != want {
+		t.Errorf("Media types = %q, want %q", got, want)
+	}
+}
+
+func TestAcceptableMediaTypesIgnoresInvalidMediaTypes(t *testing.T) {
+	want := "text/plain"
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	req.Header.Set("Accept", "text/plain , zzzxxx ")
 	c := Context{
 		Request: req,
 	}

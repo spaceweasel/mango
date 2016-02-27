@@ -13,6 +13,10 @@ type mediaType struct {
 	q           float32
 }
 
+func (m mediaType) Empty() bool {
+	return len(m.mainType) == 0 || len(m.subType) == 0
+}
+
 func (m mediaType) String() string {
 	return m.mainType + "/" + m.subType + m.rangeParams
 }
