@@ -366,7 +366,7 @@ func TestBindingWithJsonBody(t *testing.T) {
 	}
 }
 
-func TestBindingWithJsonBodyAndNoContentTypeSet(t *testing.T) {
+func TestBindingWithJsonBodyAndContentTypeWithParameter(t *testing.T) {
 	want := "Mango-34"
 	json := `   {"id":34,"name":"Mango"}`
 	r, _ := http.NewRequest("POST", "someurl", bytes.NewBufferString(json))
