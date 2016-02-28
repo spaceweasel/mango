@@ -147,9 +147,16 @@ func (c *Context) Redirect(urlStr string, code int) {
 // 	fmt.Fprintf(c.Writer, "")
 // }
 
+
 func (c *Context) contentDecoder() (Decoder, error) {
 	ct := c.Request.Header.Get("Content-Type")
-	return c.encoderEngine.GetDecoder(c.Request.Body, ct)
+	ct = strings.Replace(ct, " ", "", -1)
+	decoder, err := c.encoderEngine.GetDecoder(c.Request.Body, ct)
+	if(err != nil){
+		// If the full Content-Type doesn't match try matching only up to the ;
+		decoder, err = c.encoderEngine.GetDecoder(c.Request.Body, strings.Split(ct, ";")[0])
+	}
+	return decoder, err
 }
 
 func (c *Context) acceptableMediaTypes() []string {
@@ -168,7 +175,9 @@ func (c *Context) acceptableMediaTypes() []string {
 	sort.Sort(mt)
 	r := []string{}
 	for _, t := range mt {
-		r = append(r, t.String())
+		if(!t.Empty()){
+			r = append(r, t.String())
+		}
 	}
 	return r
 }
