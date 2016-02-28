@@ -7,35 +7,16 @@ import (
 	"strings"
 )
 
-func newTree() *tree {
-	t := tree{}
-	t.paramValidator = newParameterValidators()
-	return &t
+func newTree(v ValidationHandler) *tree {
+	return &tree{
+		validators: v,
+	}
 }
 
 type tree struct {
 	root             *treenode
-	paramValidator   RouteParamValidators
+	validators       ValidationHandler
 	GlobalCORSConfig *CORSConfig
-}
-
-// AddRouteParamValidator adds a new validator to the collection.
-// AddRouteParamValidator panics if a validator with the same Type()
-// exists.
-func (t *tree) AddRouteParamValidator(v ParamValidator) {
-	t.paramValidator.AddValidator(v)
-}
-
-// AddRouteParamValidators adds a slice of new validators to the collection.
-// AddRouteParamValidators panics if a validator with the same Type()
-// exists.
-func (t *tree) AddRouteParamValidators(validators []ParamValidator) {
-	t.paramValidator.AddValidators(validators)
-}
-
-// SetRouteParamValidators sets the internal paramValidator collection.
-func (t *tree) SetRouteParamValidators(v RouteParamValidators) {
-	t.paramValidator = v
 }
 
 // Root returns the tree root node, assigning a new empty node if
@@ -133,7 +114,7 @@ func (t *tree) search(nodes []*treenode, path string) (*treenode, *stringList, b
 		if node.isParam {
 			if i >= 0 {
 				value := path[:i]
-				if !t.paramValidator.IsValid(value, node.paramConstraint) {
+				if _, ok := t.validators.IsValid(value, node.paramConstraint); !ok {
 					continue
 				}
 				path = path[i:]
@@ -141,7 +122,7 @@ func (t *tree) search(nodes []*treenode, path string) (*treenode, *stringList, b
 				paramValues = addItem(paramValues, value)
 				return t, paramValues, s
 			}
-			if !t.paramValidator.IsValid(path, node.paramConstraint) {
+			if _, ok := t.validators.IsValid(path, node.paramConstraint); !ok {
 				continue
 			}
 			paramValues := newStringList(path)

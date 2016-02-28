@@ -15,7 +15,7 @@ import (
 
 type mockRoutes struct {
 	routes           map[string]map[string]ContextHandlerFunc
-	validators       map[string]ParamValidator
+	validators       map[string]Validator
 	corsConfigs      map[string]CORSConfig
 	globalCORSConfig CORSConfig
 }
@@ -48,19 +48,6 @@ func (m *mockRoutes) GetResource(path string) (*Resource, bool) {
 	return &res, ok
 }
 
-func (m *mockRoutes) AddRouteParamValidator(v ParamValidator) {
-	if _, ok := m.validators[v.Type()]; ok {
-		panic("conflicting constraint type: " + v.Type())
-	}
-	m.validators[v.Type()] = v
-}
-
-func (m *mockRoutes) AddRouteParamValidators(validators []ParamValidator) {
-	for _, v := range validators {
-		m.AddRouteParamValidator(v)
-	}
-}
-
 func (m *mockRoutes) SetGlobalCORS(config CORSConfig) {
 	m.globalCORSConfig = config
 }
@@ -76,7 +63,7 @@ func (m *mockRoutes) AddCORS(pattern string, config CORSConfig) {
 func newMockRoutes() *mockRoutes {
 	mr := mockRoutes{}
 	mr.routes = make(map[string]map[string]ContextHandlerFunc)
-	mr.validators = make(map[string]ParamValidator)
+	mr.validators = make(map[string]Validator)
 	mr.corsConfigs = make(map[string]CORSConfig)
 	return &mr
 }
@@ -714,6 +701,19 @@ func TestResponseMessageWhenErrorEncodingPayload(t *testing.T) {
 	}
 }
 
+func TestNewRouterSetsValidationHandler(t *testing.T) {
+	want := reflect.TypeOf(&elementValidationHandler{}).String()
+	r := NewRouter()
+	if r.validationHandler == nil {
+		t.Errorf("ValidationHandler type = \"<nil>\", want %q", want)
+		return
+	}
+	got := reflect.TypeOf(r.validationHandler).String()
+	if got != want {
+		t.Errorf("ValidationHandler = %q, want %q", got, want)
+	}
+}
+
 func TestNewRouterSetsRoutes(t *testing.T) {
 	want := reflect.TypeOf(&tree{}).String()
 	r := NewRouter()
@@ -722,6 +722,20 @@ func TestNewRouterSetsRoutes(t *testing.T) {
 		return
 	}
 	got := reflect.TypeOf(r.routes).String()
+	if got != want {
+		t.Errorf("Routes type = %q, want %q", got, want)
+	}
+}
+
+func TestNewRouterSetsRoutesValidationHandler(t *testing.T) {
+	want := reflect.TypeOf(&elementValidationHandler{}).String()
+	r := NewRouter()
+	if r.routes == nil {
+		t.Errorf("Routes type = \"<nil>\", want %q", want)
+		return
+	}
+	tr := r.routes.(*tree)
+	got := reflect.TypeOf(tr.validators).String()
 	if got != want {
 		t.Errorf("Routes type = %q, want %q", got, want)
 	}
@@ -914,33 +928,35 @@ func TestAddDecoderFuncCapturesEncoderEngineError(t *testing.T) {
 	}
 }
 
-func TestRouterAddRouteParamValidator(t *testing.T) {
+func TestRouterAddValidator(t *testing.T) {
 	want := true
 	r := Router{}
-	routes := newMockRoutes()
-	r.routes = routes
-	r.AddRouteParamValidator(Int32Validator{})
-	valid := routes.TestValidators("123", "int32")
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	r.validationHandler = &evh
+	r.AddValidator(Int32Validator{})
+	_, valid := r.validationHandler.IsValid("123", "int32")
 	got := valid
 	if got != want {
 		t.Errorf("Valid = %t, want %t", got, want)
 	}
 }
 
-func TestRouterAddRouteParamValidators(t *testing.T) {
+func TestRouterAddValidators(t *testing.T) {
 	want := true
 	r := Router{}
-	routes := newMockRoutes()
-	r.routes = routes
-	r.AddRouteParamValidators([]ParamValidator{Int32Validator{}})
-	valid := routes.TestValidators("123", "int32")
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	r.validationHandler = &evh
+	r.AddValidators([]Validator{Int32Validator{}})
+	_, valid := r.validationHandler.IsValid("123", "int32")
 	got := valid
 	if got != want {
 		t.Errorf("Valid = %t, want %t", got, want)
 	}
 }
 
-func TestRouterAddRouteParamValidatorPanicsIfConstraintConflicts(t *testing.T) {
+func TestRouterAddValidatorPanicsIfConstraintConflicts(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			want := "conflicting constraint type: int32"
@@ -954,14 +970,14 @@ func TestRouterAddRouteParamValidatorPanicsIfConstraintConflicts(t *testing.T) {
 	}()
 
 	r := Router{}
-	routes := newMockRoutes()
-	r.routes = routes
-
-	r.AddRouteParamValidator(Int32Validator{})
-	r.AddRouteParamValidator(dupValidator{})
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	r.validationHandler = &evh
+	r.AddValidator(Int32Validator{})
+	r.AddValidator(dupValidator{})
 }
 
-func TestRouterAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) {
+func TestRouterAddValidatorsPanicsIfConstraintConflicts(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			want := "conflicting constraint type: int32"
@@ -975,10 +991,10 @@ func TestRouterAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) 
 	}()
 
 	r := Router{}
-	routes := newMockRoutes()
-	r.routes = routes
-
-	r.AddRouteParamValidators([]ParamValidator{
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	r.validationHandler = &evh
+	r.AddValidators([]Validator{
 		Int32Validator{},
 		dupValidator{},
 	})
@@ -1265,7 +1281,125 @@ func TestAddCORSForwardsToTree(t *testing.T) {
 	}
 }
 
-// TODO:
+func TestRouterSetsContextModelValidator(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	rtr.validationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+
+	rtr.Get("/test", func(ctx *Context) {
+		if ctx.modelValidator == nil {
+			t.Errorf("ModelValidator = <nil>, want %T", contextModelValidator{})
+		}
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+
+	rtr.ServeHTTP(w, req)
+}
+
+func TestRouterAddModelValidatorAddsToCollection(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	rtr.validationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+
+	type model struct {
+		Name string
+		Age  int
+	}
+	custValidator := func(m interface{}) (map[string][]ValidationFailure, bool) {
+		results := make(map[string][]ValidationFailure)
+		cm := m.(model)
+		if cm.Name != "Mango" {
+			results["Name"] = []ValidationFailure{
+				{Code: "wrongname",
+					Message: "Name must be Mango"},
+			}
+		}
+		return results, len(results) == 0
+	}
+
+	rtr.AddModelValidator(model{}, custValidator)
+
+	rtr.Get("/test", func(ctx *Context) {
+		testModel := model{"Mingo", 45}
+		details, ok := ctx.Validate(testModel)
+		if ok {
+			t.Errorf("Validate result = true, want false")
+			return
+		}
+		want := "Name must be Mango"
+		got := details["Name"][0].Message
+		if got != want {
+			t.Errorf("Validate message = %q, want %q", got, want)
+			return
+		}
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+
+	rtr.ServeHTTP(w, req)
+}
+
+func TestRouterNewValidatorsAddedAreAvailableToModelValidator(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	evh := elementValidationHandler{}
+	evh.validators = make(map[string]Validator)
+	rtr.validationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+
+	rtr.AddValidator(CheeseValidator{})
+
+	type model struct {
+		Name string `validate:"cheese"`
+		Age  int
+	}
+
+	rtr.Get("/test", func(ctx *Context) {
+		testModel := model{"Mingo", 45}
+		details, ok := ctx.Validate(testModel)
+		if ok {
+			t.Errorf("Validate result = true, want false")
+			return
+		}
+		want := "Must contain the word cheese."
+		got := details["Name"][0].Message
+		if got != want {
+			t.Errorf("Validate message = %q, want %q", got, want)
+			return
+		}
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+
+	rtr.ServeHTTP(w, req)
+}
+
+type CheeseValidator struct{}
+
+func (CheeseValidator) Validate(val interface{}, params []string) bool {
+	s := val.(string)
+	return strings.Contains(s, "cheese")
+}
+
+func (CheeseValidator) Type() string {
+	return "cheese"
+}
+
+func (CheeseValidator) FailureMsg() string {
+	return "Must contain the word cheese."
+}
+
+// // TODO:
 // func TestRouterCallsHandleCORS(t *testing.T) {
 //
 // 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)

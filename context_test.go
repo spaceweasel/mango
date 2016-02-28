@@ -354,13 +354,13 @@ func TestBindingWithJsonBody(t *testing.T) {
 		encoderEngine: newEncoderEngine(),
 	}
 	type data struct {
-		Id   int    `json:"id"`
+		ID   int    `json:"id"`
 		Name string `json:"name"`
 	}
 	decoded := data{}
 	c.Bind(&decoded)
 
-	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.Id)
+	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.ID)
 	if got != want {
 		t.Errorf("Bind() = %q, want %q", got, want)
 	}
@@ -370,7 +370,7 @@ func TestBindingWithJsonBodyAndContentTypeWithParameter(t *testing.T) {
 	want := "Mango-34"
 	json := `   {"id":34,"name":"Mango"}`
 	r, _ := http.NewRequest("POST", "someurl", bytes.NewBufferString(json))
-  r.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	r.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	c := Context{
 		Request:       r,
 		encoderEngine: newEncoderEngine(),
@@ -385,6 +385,72 @@ func TestBindingWithJsonBodyAndContentTypeWithParameter(t *testing.T) {
 	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.Id)
 	if got != want {
 		t.Errorf("Bind() = %q, want %q", got, want)
+	}
+}
+
+func TestValidateReturnsTrueIfValidationSucceeds(t *testing.T) {
+	want := true
+
+	c := Context{
+		modelValidator: newModelValidator(newValidationHandler()),
+	}
+
+	test := struct {
+		Name string `validate:"alpha"`
+	}{
+		"Mango",
+	}
+	_, ok := c.Validate(test)
+
+	got := ok
+	if got != want {
+		t.Errorf("Error = %t, want %t", got, want)
+	}
+}
+
+func TestValidateReturnsFalseIfValidationFails(t *testing.T) {
+	want := false
+
+	c := Context{
+		modelValidator: newModelValidator(newValidationHandler()),
+	}
+
+	test := struct {
+		Name string `validate:"alpha"`
+	}{
+		"Mango59",
+	}
+	_, ok := c.Validate(test)
+
+	got := ok
+	if got != want {
+		t.Errorf("Error = %t, want %t", got, want)
+	}
+}
+
+func TestValidateReturnsErrorsIfValidationFails(t *testing.T) {
+	want := "alpha"
+
+	c := Context{
+		modelValidator: newModelValidator(newValidationHandler()),
+	}
+
+	test := struct {
+		Name string `validate:"alpha"`
+	}{
+		"Mango59",
+	}
+	details, _ := c.Validate(test)
+
+	vError, ok := details["Name"]
+	if !ok {
+		t.Errorf("No errors for 'Name'")
+		return
+	}
+
+	got := vError[0].Code
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
 	}
 }
 

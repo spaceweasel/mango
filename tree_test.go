@@ -1,7 +1,6 @@
 package mango
 
 import (
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -234,124 +233,10 @@ func TestRetrievingCorrectHandlerForMethod(t *testing.T) {
 	}
 }
 
-func TestSettingRouteParamValidators(t *testing.T) {
-	validator := mockRouteParamsValidator{valid: true}
-
-	tree := tree{}
-	tree.SetRouteParamValidators(validator)
-
-	want := reflect.TypeOf(validator).Name()
-	got := reflect.TypeOf(tree.paramValidator).Name()
-	if got != want {
-		t.Errorf("Value = %q, want %q", got, want)
-	}
-}
-
-func TestTreeAddRouteParamValidator(t *testing.T) {
-	want := true
-
-	tree := tree{}
-	v := &parameterValidators{}
-	v.validators = make(map[string]ParamValidator)
-	tree.paramValidator = v
-
-	tree.AddRouteParamValidator(Int32Validator{})
-	valid := tree.paramValidator.IsValid("123", "int32")
-	got := valid
-	if got != want {
-		t.Errorf("Valid = %t, want %t", got, want)
-	}
-}
-
-func TestTreeAddRouteParamValidators(t *testing.T) {
-	want := true
-
-	tree := tree{}
-	v := &parameterValidators{}
-	v.validators = make(map[string]ParamValidator)
-	tree.paramValidator = v
-
-	tree.AddRouteParamValidators([]ParamValidator{Int32Validator{}})
-	valid := tree.paramValidator.IsValid("123", "int32")
-	got := valid
-	if got != want {
-		t.Errorf("Valid = %t, want %t", got, want)
-	}
-}
-
-type dupValidator struct{}
-
-func (dupValidator) Validate(s string, args []string) bool {
-	return true
-}
-
-func (dupValidator) Type() string {
-	return "int32"
-}
-
-func TestTreeAddRouteParamValidatorPanicsIfConstraintConflicts(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			want := "conflicting constraint type: int32"
-			got := r
-			if got != want {
-				t.Errorf("Error message = %q, want %q", got, want)
-			}
-		} else {
-			t.Errorf("The code did not panic")
-		}
-	}()
-
-	tree := tree{}
-	v := &parameterValidators{}
-	v.validators = make(map[string]ParamValidator)
-	tree.paramValidator = v
-
-	tree.AddRouteParamValidator(Int32Validator{})
-	tree.AddRouteParamValidator(dupValidator{})
-}
-
-func TestTreeAddRouteParamValidatorsPanicsIfConstraintConflicts(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			want := "conflicting constraint type: int32"
-			got := r
-			if got != want {
-				t.Errorf("Error message = %q, want %q", got, want)
-			}
-		} else {
-			t.Errorf("The code did not panic")
-		}
-	}()
-
-	tree := tree{}
-	v := &parameterValidators{}
-	v.validators = make(map[string]ParamValidator)
-	tree.paramValidator = v
-
-	tree.AddRouteParamValidators([]ParamValidator{
-		Int32Validator{},
-		dupValidator{},
-	})
-}
-
-func TestNewTreeSetsRouteParamValidators(t *testing.T) {
-	want := reflect.TypeOf(&parameterValidators{}).String()
-	tree := newTree()
-	if tree.paramValidator == nil {
-		t.Errorf("RouteParamValidators type = \"<nil>\", want %q", want)
-		return
-	}
-	got := reflect.TypeOf(tree.paramValidator).String()
-	if got != want {
-		t.Errorf("RouteParamValidators type = %q, want %q", got, want)
-	}
-}
-
 func TestRetrievingSingleRouteParameter(t *testing.T) {
 	want := "45"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
 	resource, _ := tree.GetResource("/Sleepers/45")
@@ -364,8 +249,8 @@ func TestRetrievingSingleRouteParameter(t *testing.T) {
 
 func TestRouteIsIgnoredWhenTerminatingParameterIsInvalid(t *testing.T) {
 	want := false
-	validator := mockRouteParamsValidator{valid: false}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: false}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
 	_, ok := tree.GetResource("/Sleepers/45")
@@ -377,8 +262,8 @@ func TestRouteIsIgnoredWhenTerminatingParameterIsInvalid(t *testing.T) {
 
 func TestRouteIsIgnoredWhenMidplacedParameterIsInvalid(t *testing.T) {
 	want := false
-	validator := mockRouteParamsValidator{valid: false}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: false}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/Sleepers/{sleeperID}/books", "GET", testFunc)
 	_, ok := tree.GetResource("/Sleepers/45/books")
@@ -390,8 +275,8 @@ func TestRouteIsIgnoredWhenMidplacedParameterIsInvalid(t *testing.T) {
 
 func TestRetrievingMultipleRouteParameters(t *testing.T) {
 	want := "45greenant"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}/{insect}", "GET", testFunc)
 	resource, _ := tree.GetResource("/Sleepers/45/eyecolor/green/ant")
@@ -407,8 +292,8 @@ func TestRetrievingMultipleRouteParameters(t *testing.T) {
 
 func TestRetrievingMultipleRouteParametersWhenManyRoutes(t *testing.T) {
 	want := "45greenant"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 	tree.AddHandlerFunc("/Cheese/{sleeperID}", "GET", testFunc)
 	tree.AddHandlerFunc("/{sleeperID}/eggs", "GET", testFunc)
 	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
@@ -427,8 +312,8 @@ func TestRetrievingMultipleRouteParametersWhenManyRoutes(t *testing.T) {
 
 func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedLast(t *testing.T) {
 	want := "testFunc"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 	tree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
 	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
 	resource, _ := tree.GetResource("/eyecolor/green")
@@ -449,8 +334,8 @@ func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedLast(t *testing.T) {
 
 func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedFirst(t *testing.T) {
 	want := "testFunc"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
@@ -472,8 +357,8 @@ func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedFirst(t *testing.T) 
 
 func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedFirst(t *testing.T) {
 	want := "testFunc"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/{color:alpha}", "GET", testFunc)
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
@@ -496,8 +381,8 @@ func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedFirst(t *testing.
 
 func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedLast(t *testing.T) {
 	want := "testFunc"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
@@ -520,8 +405,8 @@ func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedLast(t *testing.T
 
 func TestMatchingPathElementShorterThanLabelReturnsFalseIfNoOtherMatches(t *testing.T) {
 	want := false
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/greenish", "GET", testFunc3)
@@ -559,8 +444,8 @@ func TestAddHandlerFuncPanicsWithCorrectMessageWhenMismatchingParameterBraces(t 
 
 func TestCORSConfigAppliedToResource(t *testing.T) {
 	want := "http://greencheese.com"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
@@ -582,8 +467,8 @@ func TestCORSConfigAppliedToResource(t *testing.T) {
 
 func TestTreeGetResourceUsesGlobalCORSConfigWhenResourceConfigIsNil(t *testing.T) {
 	want := "http://greencheese.com"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
@@ -605,8 +490,8 @@ func TestTreeGetResourceUsesGlobalCORSConfigWhenResourceConfigIsNil(t *testing.T
 
 func TestTreeGetResourceDoesNotUseGlobalCORSConfigWhenResourceConfigIsNotNil(t *testing.T) {
 	want := "http://bluecheese.com"
-	validator := mockRouteParamsValidator{valid: true}
-	tree := tree{paramValidator: validator}
+	validator := mockValidationHandler{valid: true}
+	tree := tree{validators: validator}
 
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
@@ -971,16 +856,16 @@ func TestTreeStructureWithTwoStaticRoutesWithParametizedSegments(t *testing.T) {
 
 // mocks
 
-type mockRouteParamsValidator struct {
+type mockValidationHandler struct {
 	valid bool
 }
 
-func (r mockRouteParamsValidator) AddValidator(v ParamValidator) {
+func (r mockValidationHandler) AddValidator(v Validator) {
 
 }
-func (r mockRouteParamsValidator) AddValidators(validators []ParamValidator) {
+func (r mockValidationHandler) AddValidators(validators []Validator) {
 
 }
-func (r mockRouteParamsValidator) IsValid(s, constraint string) bool {
-	return r.valid
+func (r mockValidationHandler) IsValid(val interface{}, constraints string) ([]ValidationFailure, bool) {
+	return []ValidationFailure{}, r.valid
 }
