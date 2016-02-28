@@ -10,8 +10,6 @@ import (
 type routes interface {
 	AddHandlerFunc(pattern, method string, handlerFunc ContextHandlerFunc)
 	GetResource(path string) (*Resource, bool)
-	AddRouteParamValidator(v ParamValidator)
-	AddRouteParamValidators(validators []ParamValidator)
 	SetGlobalCORS(config CORSConfig)
 	SetCORS(pattern string, config CORSConfig)
 	AddCORS(pattern string, config CORSConfig)
@@ -34,28 +32,38 @@ type Router struct {
 	RequestLogger            RequestLogFunc
 	ErrorLogger              func(error)
 	AutoPopulateOptionsAllow bool
+	validationHandler        ValidationHandler
+	modelValidator           ModelValidator
 }
 
-// AddRouteParamValidator adds a new validator to the collection.
-// AddRouteParamValidator panics if a validator with the same Type()
+// AddValidator adds a new validator to the collection.
+// AddValidator panics if a validator with the same Type()
 // exists.
-func (r *Router) AddRouteParamValidator(v ParamValidator) {
-	r.routes.AddRouteParamValidator(v)
+func (r *Router) AddValidator(v Validator) {
+	r.validationHandler.AddValidator(v)
 }
 
-// AddRouteParamValidators adds a slice of new validators to the collection.
-// AddRouteParamValidators panics if a validator with the same Type()
+// AddValidators adds a slice of new validators to the collection.
+// AddValidators panics if a validator with the same Type()
 // exists.
-func (r *Router) AddRouteParamValidators(validators []ParamValidator) {
-	r.routes.AddRouteParamValidators(validators)
+func (r *Router) AddValidators(validators []Validator) {
+	r.validationHandler.AddValidators(validators)
+}
+
+// AddModelValidator adds a custom model validator to the collection.
+func (r *Router) AddModelValidator(m interface{}, fn ValidateFunc) {
+	r.modelValidator.AddCustomValidator(m, fn)
 }
 
 // NewRouter returns a pointer to a new Router instance.
-// The Router will be initialised with a new EncoderEngine
+// The Router will be initialised with a new EncoderEngine,
+// Validation handlers for route parameters and models,
 // and route handling functionality.
 func NewRouter() *Router {
 	r := Router{}
-	r.routes = newTree()
+	r.validationHandler = newValidationHandler()
+	r.routes = newTree(r.validationHandler)
+	r.modelValidator = newModelValidator(r.validationHandler)
 	r.encoderEngine = newEncoderEngine()
 	r.AutoPopulateOptionsAllow = true
 	return &r
@@ -85,7 +93,20 @@ func (r *Router) AddCORS(pattern string, config CORSConfig) {
 }
 
 // Get registers a new handlerFunc that will be called when HTTP GET
-// requests are made to URLs with paths that match pattern.
+// requests are made to URLs with paths that matc// // TODO:
+// func TestRouterCallsHandleCORS(t *testing.T) {
+//
+// 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+// 	req.RemoteAddr = "127.0.0.1"
+// 	w := httptest.NewRecorder()
+// 	got := ""
+// 	r := Router{}
+// 	r.routes = newMockRoutes()
+// 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+// 		c.RespondWith("A mango in the hand")
+// 	})
+// 	r.ServeHTTP(w, req)
+// }h pattern.
 // If a GET handlerFunc already exists for pattern, Get panics.
 func (r *Router) Get(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "GET", handlerFunc)
@@ -190,10 +211,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	c := &Context{
-		Request:       req,
-		Writer:        resp,
-		RouteParams:   resource.RouteParams,
-		encoderEngine: r.encoderEngine,
+		Request:        req,
+		Writer:         resp,
+		RouteParams:    resource.RouteParams,
+		encoderEngine:  r.encoderEngine,
+		modelValidator: r.modelValidator,
 	}
 
 	//call prehooks

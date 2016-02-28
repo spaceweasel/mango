@@ -53,16 +53,17 @@ func (r *Response) WithContentType(ct string) *Response {
 // designed to keep your handler code clean and free from boiler
 // code.
 type Context struct {
-	Request       *http.Request
-	Writer        http.ResponseWriter
-	status        int
-	payload       []byte
-	model         interface{}
-	RouteParams   map[string]string
-	encoderEngine EncoderEngine
-	Reader        io.ReadCloser
-	Identity      Identity
-	responseReady bool
+	Request        *http.Request
+	Writer         http.ResponseWriter
+	status         int
+	payload        []byte
+	model          interface{}
+	RouteParams    map[string]string
+	encoderEngine  EncoderEngine
+	Reader         io.ReadCloser
+	Identity       Identity
+	responseReady  bool
+	modelValidator ModelValidator
 }
 
 // ContextHandlerFunc type is an adapter to allow the use of ordinary
@@ -222,4 +223,9 @@ func (c *Context) Bind(m interface{}) error {
 	// TODO: now update any missing empty properties from url path/query params
 
 	return nil
+}
+
+// Validate validates the properties of the model m
+func (c *Context) Validate(m interface{}) (map[string][]ValidationFailure, bool) {
+	return c.modelValidator.Validate(m)
 }
