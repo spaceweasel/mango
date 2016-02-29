@@ -1,6 +1,9 @@
 package mango
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // ValidateFunc is the signature for implementing custom model validators.
 type ValidateFunc func(m interface{}) (map[string][]ValidationFailure, bool)
@@ -74,10 +77,51 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 	case reflect.Ptr:
 		val := rv.Elem()
 		return mv.validateProperty(name, val, constraints)
+	case reflect.Slice, reflect.Array:
+		if constraints != "" {
+			// validate the array/slice "as a container" first
+			fails, ok := mv.validationHandler.IsValid(rv.Interface(), constraints)
+			if !ok {
+				results[name] = fails
+			}
+		}
+		// now validate each element, but only if they're structs
+		if rv.Type().Elem().Kind() != reflect.Struct {
+			break
+		}
+		for i := 0; i < rv.Len(); i++ {
+			details, ok := mv.Validate(rv.Index(i).Interface())
+			if ok {
+				continue
+			}
+			for k, v := range details {
+				results[fmt.Sprintf("%s[%d].%s", name, i, k)] = v
+			}
+		}
+	case reflect.Map:
+		if constraints != "" {
+			// validate the map "as a container" first
+			fails, ok := mv.validationHandler.IsValid(rv.Interface(), constraints)
+			if !ok {
+				results[name] = fails
+			}
+		}
+		// now validate each element (value, not the key), but only if they're structs
+		if rv.Type().Elem().Kind() != reflect.Struct {
+			break
+		}
+		for _, key := range rv.MapKeys() {
+			details, ok := mv.Validate(rv.MapIndex(key).Interface())
+			if ok {
+				continue
+			}
+			for k, v := range details {
+				results[fmt.Sprintf("%s[%v].%s", name, key, k)] = v
+			}
+		}
+
 	case reflect.String,
-		reflect.Map,
-		reflect.Array,
-		reflect.Slice,
+		//reflect.Map,
 		reflect.Int,
 		reflect.Int8,
 		reflect.Int16,

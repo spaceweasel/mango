@@ -709,3 +709,214 @@ func TestCustomValidatorreturnsFailureDetails(t *testing.T) {
 		return
 	}
 }
+
+func TestValidateModelWithArrayValidatesElementsWithNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}
+	}{
+		"Mango", [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{84.6, 531.8}, {124.6, 111.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithArrayValidatesElementsWithErrorReturnsDetailsInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}
+	}{
+		"Mango", [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{84.6, 531.8}, {24.6, 111.8},
+		},
+	}
+	details, _ := validator.Validate(&test)
+
+	want := "min(50)"
+	fails, ok := details["Shapes[1].Width"]
+	if !ok {
+		t.Errorf("Validate error Dimensions.Width details missing")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateModelWithSliceValidatesElementsWithNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}
+	}{
+		"Mango", []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{84.6, 531.8}, {124.6, 111.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithSliceValidatesElementsWithErrorReturnsDetailsInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}
+	}{
+		"Mango", []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{84.6, 531.8}, {24.6, 111.8},
+		},
+	}
+	details, _ := validator.Validate(&test)
+
+	want := "min(50)"
+	fails, ok := details["Shapes[1].Width"]
+	if !ok {
+		t.Errorf("Validate error Dimensions.Width details missing")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateModelWithStringKeyMapValidatesElementsWithNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	type shape struct {
+		Width  float32 `validate:"min(50)"`
+		Length float32 `validate:"min(60)"`
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes map[string]shape
+	}{
+		"Mango", map[string]shape{
+			"square":    shape{85.8, 85.8},
+			"rectangle": shape{124.6, 111.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithStringKeyMapValidatesElementsWithErrorReturnsDetailsInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	type shape struct {
+		Width  float32 `validate:"min(50)"`
+		Length float32 `validate:"min(60)"`
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes map[string]shape
+	}{
+		"Mango", map[string]shape{
+			"square":    shape{85.8, 85.8},
+			"rectangle": shape{124.6, 11.8},
+		},
+	}
+	details, _ := validator.Validate(&test)
+	want := "min(60)"
+	fails, ok := details["Shapes[rectangle].Length"]
+	if !ok {
+		t.Errorf("Validate error Dimensions.Width details missing")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateModelWithIntKeyMapValidatesElementsWithErrorReturnsDetailsInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	type shape struct {
+		Width  float32 `validate:"min(50)"`
+		Length float32 `validate:"min(60)"`
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes map[int]shape
+	}{
+		"Mango", map[int]shape{
+			34:      shape{85.8, 85.8},
+			9454985: shape{124.6, 11.8},
+		},
+	}
+	details, _ := validator.Validate(&test)
+	want := "min(60)"
+	fails, ok := details["Shapes[9454985].Length"]
+	if !ok {
+		t.Errorf("Validate error Dimensions.Width details missing")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
