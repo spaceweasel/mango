@@ -516,8 +516,18 @@ func TestTreeGetResourceDoesNotUseGlobalCORSConfigWhenResourceConfigIsNotNil(t *
 }
 
 ////
-
-func TestTreeAddCORSWhenNoGlobalConfig(t *testing.T) {
+func TestTreeAddCORSPanicsWhenNoGlobalConfig(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "GlobalCORS has not been set"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
 	tree := tree{}
 	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	rConfig := CORSConfig{
@@ -529,6 +539,20 @@ func TestTreeAddCORSWhenNoGlobalConfig(t *testing.T) {
 		MaxAge:         45,
 	}
 	tree.AddCORS("/eyecolor/blue", rConfig)
+}
+
+func TestTreeSetCORSWhenNoGlobalConfig(t *testing.T) {
+	tree := tree{}
+	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	rConfig := CORSConfig{
+		Origins:        []string{"http://bluecheese.com"},
+		Methods:        []string{"POST", "PATCH"},
+		Headers:        []string{"X-Cheese", "X-Mangoes"},
+		ExposedHeaders: []string{"X-Biscuits", "X-Mangoes"},
+		Credentials:    true,
+		MaxAge:         45,
+	}
+	tree.SetCORS("/eyecolor/blue", rConfig)
 
 	tests := []struct {
 		want string

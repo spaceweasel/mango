@@ -88,25 +88,13 @@ func (r *Router) SetCORS(pattern string, config CORSConfig) {
 // the resource matching the pattern, by merging the supplied
 // config with any globalCORSConfig.
 // SetGlobalCORS MUST be called before this method!
+// AddCORS will panic if GlobalCORS is nil.
 func (r *Router) AddCORS(pattern string, config CORSConfig) {
 	r.routes.AddCORS(pattern, config)
 }
 
 // Get registers a new handlerFunc that will be called when HTTP GET
-// requests are made to URLs with paths that matc// // TODO:
-// func TestRouterCallsHandleCORS(t *testing.T) {
-//
-// 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
-// 	req.RemoteAddr = "127.0.0.1"
-// 	w := httptest.NewRecorder()
-// 	got := ""
-// 	r := Router{}
-// 	r.routes = newMockRoutes()
-// 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
-// 		c.RespondWith("A mango in the hand")
-// 	})
-// 	r.ServeHTTP(w, req)
-// }h pattern.
+// requests are made to URLs with paths that match pattern.
 // If a GET handlerFunc already exists for pattern, Get panics.
 func (r *Router) Get(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "GET", handlerFunc)

@@ -14,9 +14,9 @@ func newTree(v ValidationHandler) *tree {
 }
 
 type tree struct {
-	root             *treenode
-	validators       ValidationHandler
-	GlobalCORSConfig *CORSConfig
+	root       *treenode
+	validators ValidationHandler
+	GlobalCORS *CORSConfig
 }
 
 // Root returns the tree root node, assigning a new empty node if
@@ -30,10 +30,10 @@ func (t *tree) Root() *treenode {
 
 // SetGlobalCORS sets the CORS configuration that will be used for
 // a resource if it has no CORS configuration of its own. If the
-// resource has no CORSConfig and tree.GlobalCORSConfig is nil
+// resource has no CORSConfig and tree.GlobalCORS is nil
 // then CORS request are treated like any other.
 func (t *tree) SetGlobalCORS(config CORSConfig) {
-	t.GlobalCORSConfig = &config
+	t.GlobalCORS = &config
 }
 
 // SetCORS sets the CORS configuration that will be used for
@@ -48,13 +48,13 @@ func (t *tree) SetCORS(pattern string, config CORSConfig) {
 // the resource matching the pattern, by merging the supplied
 // config with any globalCORSConfig.
 // SetGlobalCORS MUST be called before this method!
+// AddCORS will panic if GlobalCORS is nil.
 func (t *tree) AddCORS(pattern string, config CORSConfig) {
-	node, _ := t.Root().addNode(pattern)
-	if t.GlobalCORSConfig == nil {
-		node.CORSConfig = &config
-		return
+	if t.GlobalCORS == nil {
+		panic("GlobalCORS has not been set")
 	}
-	c := t.GlobalCORSConfig.clone()
+	node, _ := t.Root().addNode(pattern)
+	c := t.GlobalCORS.clone()
 	c.merge(config)
 	node.CORSConfig = c
 }
@@ -103,7 +103,7 @@ func (t *tree) GetResource(path string) (*Resource, bool) {
 	res.Handlers = n.handlers
 	res.CORSConfig = n.CORSConfig
 	if res.CORSConfig == nil {
-		res.CORSConfig = t.GlobalCORSConfig
+		res.CORSConfig = t.GlobalCORS
 	}
 	return &res, true
 }
