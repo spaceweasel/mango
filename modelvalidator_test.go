@@ -144,27 +144,46 @@ func TestValidateStringsModelWithMultipleErrorsReturnsDetailsInMap(t *testing.T)
 		"56kj4", "987kjh6",
 	}
 
+	match := func(fails []ValidationFailure, s string) string {
+		for _, v := range fails {
+			if v.Code == s {
+				return s
+			}
+		}
+		return ""
+	}
+
 	details, _ := validator.Validate(&test)
 
-	want := "alpha,prefix(sheep)"
 	fails, ok := details["FirstName"]
 	if !ok {
 		t.Errorf("FirstName Validate fail count = 0, want 2")
 	}
-	got := fails[0].Code + "," + fails[1].Code
 
+	want := "alpha"
+	got := match(fails, want)
 	if got != want {
-		t.Errorf("Validate error = %q, want %q", got, want)
+		t.Errorf("Validate error (FirstName) = %q, want %q", got, want)
 	}
-	want = "alpha,suffix(cheese)"
+	want = "prefix(sheep)"
+	got = match(fails, want)
+	if got != want {
+		t.Errorf("Validate error (FirstName) = %q, want %q", got, want)
+	}
+
 	fails, ok = details["LastName"]
 	if !ok {
 		t.Errorf("LastName Validate fail count = 0, want 1")
 	}
-	got = fails[0].Code + "," + fails[1].Code
-
+	want = "alpha"
+	got = match(fails, want)
 	if got != want {
-		t.Errorf("Validate error = %q, want %q", got, want)
+		t.Errorf("Validate error (LastName) = %q, want %q", got, want)
+	}
+	want = "suffix(cheese)"
+	got = match(fails, want)
+	if got != want {
+		t.Errorf("Validate error (LastName) = %q, want %q", got, want)
 	}
 }
 
@@ -350,7 +369,6 @@ func TestValidateModelInnerPointerStructWithErrorReturnsDetailsInMap(t *testing.
 	}
 
 	details, _ := validator.Validate(&test)
-
 	want := "min(50)"
 	fails, ok := details["Dimensions.Width"]
 	if !ok {
@@ -394,7 +412,7 @@ func TestValidateStringPointerModelWithErrorReturnsDetailsInMap(t *testing.T) {
 	}
 	test := struct {
 		FirstName string  `validate:"alpha"`
-		LastName  *string `validate:"alpha"`
+		LastName  *string `validate:"*alpha"`
 	}{
 		"564", &lastname,
 	}
@@ -423,6 +441,32 @@ func TestValidateStringPointerModelWithErrorReturnsDetailsInMap(t *testing.T) {
 	}
 }
 
+func TestValidatePointerModelWithParameterConstraintAndErrorReturnsDetailsInMap(t *testing.T) {
+	lastname := "Mango"
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		FirstName string  `validate:"alpha"`
+		LastName  *string `validate:"*lenmin(6)"`
+	}{
+		"Jeff", &lastname,
+	}
+
+	details, _ := validator.Validate(&test)
+
+	want := "lenmin(6)"
+	fails, ok := details["LastName"]
+	if !ok {
+		t.Errorf("LastName Validate fail count = 0, want 1")
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
 func TestValidateStringNilPointerModelDoesNotPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -434,7 +478,7 @@ func TestValidateStringNilPointerModelDoesNotPanic(t *testing.T) {
 	}
 	test := struct {
 		FirstName string  `validate:"alpha"`
-		LastName  *string `validate:"alpha"`
+		LastName  *string `validate:"*alpha"`
 	}{
 		FirstName: "564", LastName: nil,
 	}
@@ -597,6 +641,54 @@ func TestValidateArrayModelWithErrorReturnsDetailsInMap(t *testing.T) {
 	}
 
 	want := "lenmin(6)"
+	fails, ok := details["Items"]
+	if !ok {
+		t.Errorf("Items Validate fail count = 0, want 1")
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidatePointerModelWithErrorReturnsNotOK(t *testing.T) {
+	want := false
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name  string  `validate:"alpha"`
+		Items *string `validate:"notnil"`
+	}{
+		Name: "Mango",
+	}
+
+	_, got := validator.Validate(&test)
+
+	if got != want {
+		t.Errorf("Validate result = %t, want %t", got, want)
+	}
+}
+
+func TestValidatePointerModelWithErrorReturnsDetailsInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name  string  `validate:"alpha"`
+		Items *string `validate:"notnil"`
+	}{
+		Name: "Mango",
+	}
+
+	details, ok := validator.Validate(&test)
+	if ok {
+		t.Errorf("Validate result = true, want false")
+		return
+	}
+
+	want := "notnil"
 	fails, ok := details["Items"]
 	if !ok {
 		t.Errorf("Items Validate fail count = 0, want 1")

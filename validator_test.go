@@ -1,6 +1,9 @@
 package mango
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestEmptyValidatorHasEmptyStringType(t *testing.T) {
 	want := ""
@@ -2051,6 +2054,78 @@ func TestIsValidTrimsSpaceAroundConstraintName(t *testing.T) {
 	if got != want {
 		t.Errorf("Valid = %t, want %t", got, want)
 	}
+}
+
+func TestParseConstraints(t *testing.T) {
+
+	var tests = []struct {
+		input     string
+		wantCount int
+		results   map[string]string
+	}{
+		{"alpha", 1, map[string]string{"alpha": "[]"}},
+		{"min(1)", 1, map[string]string{"min": "[1]"}},
+		{"range(12.3,45.6)", 1, map[string]string{"range": "[12.3 45.6]"}},
+		{" alpha ", 1, map[string]string{"alpha": "[]"}},
+		{"min ( 1)", 1, map[string]string{"min": "[1]"}},
+		{"range(12.3 ,45.6 )", 1, map[string]string{"range": "[12.3 45.6]"}},
+		{"alpha,", 1, map[string]string{"alpha": "[]"}},
+		{"min(1),", 1, map[string]string{"min": "[1]"}},
+		{"range(12.3,45.6),", 1, map[string]string{"range": "[12.3 45.6]"}},
+		{"alpha,min(1)", 2, map[string]string{"alpha": "[]", "min": "[1]"}},
+		{"alpha,min(1),range(23.4, 6754)", 3, map[string]string{"alpha": "[]", "min": "[1]", "range": "[23.4 6754]"}},
+		{"min(1),range(23.4, 6754),alpha", 3, map[string]string{"alpha": "[]", "min": "[1]", "range": "[23.4 6754]"}},
+		{"alpha,min(1),", 2, map[string]string{"alpha": "[]", "min": "[1]"}},
+		{"alpha,min(1),range(23.4, 6754),", 3, map[string]string{"alpha": "[]", "min": "[1]", "range": "[23.4 6754]"}},
+	}
+
+	pv := newValidationHandler()
+	for _, test := range tests {
+
+		parsed := pv.ParseConstraints(test.input)
+		gotCount := len(parsed)
+		if gotCount != test.wantCount {
+			t.Errorf("Constraint count = %d, want %d", gotCount, test.wantCount)
+			return
+		}
+		for name, wantArgs := range test.results {
+			args, ok := parsed[name]
+			if !ok {
+				t.Errorf("Parsed result missing (%s), want %q", test.input, name)
+			}
+			got := fmt.Sprintf("%s", args)
+			if got != wantArgs {
+				t.Errorf("Parsed (%s): %q, want %q", test.input, got, wantArgs)
+			}
+		}
+	}
+
+}
+
+func TestParseConstraintsPanicsWhenConstraintHasDoubleCommas(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "illegal constraint format: alpha,,min(6)"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		}
+	}()
+
+	pv := newValidationHandler()
+	pv.ParseConstraints("alpha,,min(6)")
+}
+
+func getParsedConstraintsKeys(m map[string][]string) []string {
+	keys := make([]string, len(m))
+
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
 }
 
 type testValidator1 struct{}

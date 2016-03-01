@@ -869,3 +869,6 @@ func (r mockValidationHandler) AddValidators(validators []Validator) {
 func (r mockValidationHandler) IsValid(val interface{}, constraints string) ([]ValidationFailure, bool) {
 	return []ValidationFailure{}, r.valid
 }
+func (r mockValidationHandler) ParseConstraints(constraints string) map[string][]string {
+	return make(map[string][]string)
+}

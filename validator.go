@@ -39,6 +39,7 @@ type ValidationHandler interface {
 	AddValidator(v Validator)
 	AddValidators(validators []Validator)
 	IsValid(val interface{}, constraints string) ([]ValidationFailure, bool)
+	ParseConstraints(constraints string) map[string][]string
 }
 
 type elementValidationHandler struct {
@@ -61,54 +62,80 @@ func (r *elementValidationHandler) AddValidators(validators []Validator) {
 func (r *elementValidationHandler) IsValid(val interface{}, constraints string) (fails []ValidationFailure, ok bool) {
 	// Split constraints at commas, but need to consider some may
 	// have parameters which also have commas, e.g. range(3,8).
-	tests := []string{}
-	constraint := []byte{}
-	inParentheses := false
-	for i := 0; i < len(constraints); i++ {
-		inParentheses = (inParentheses || constraints[i] == '(') && constraints[i] != ')'
-
-		if constraints[i] == ',' && !inParentheses {
-			// inbetween constraints - add and reset
-			tests = append(tests, string(constraint))
-			constraint = []byte{}
-			continue
+	tests := r.ParseConstraints(constraints)
+	for name, args := range tests {
+		v, ok := r.validators[name]
+		if !ok {
+			panic(fmt.Sprintf("unknown constraint: %s", name))
 		}
-		constraint = append(constraint, constraints[i])
-	}
-	// add last remaining constraint
-	tests = append(tests, string(constraint))
-
-	for _, test := range tests {
-		if msg, pass := r.validate(val, test); !pass {
-			fails = append(fails, ValidationFailure{test, msg})
+		if !v.Validate(val, args) {
+			if len(args) > 0 {
+				name += "(" + strings.Join(args, ",") + ")"
+			}
+			fails = append(fails, ValidationFailure{name, v.FailureMsg()})
 		}
 	}
 	ok = len(fails) == 0
 	return
 }
 
-func (r *elementValidationHandler) validate(val interface{}, constraint string) (string, bool) {
-	var args []string
-	if strings.HasSuffix(constraint, ")") {
-		i := strings.IndexByte(constraint, byte('('))
-		if i < 1 {
-			panic(fmt.Sprintf("illegal constraint format: %s", constraint))
+func (r *elementValidationHandler) ParseConstraints(constraints string) map[string][]string {
+	results := make(map[string][]string)
+	brace := 0
+	args := []string{}
+	buf := make([]byte, len(constraints))
+	b := 0
+	name := ""
+	for i := 0; i < len(constraints); i++ {
+		if constraints[i] == '(' {
+			brace++
 		}
-		args = strings.Split(constraint[i+1:len(constraint)-1], ",")
-		for i, p := range args {
-			args[i] = strings.TrimSpace(p)
+		if constraints[i] == ')' {
+			brace--
+			if brace < 0 {
+				panic(fmt.Sprintf("illegal constraint format: %s", constraints))
+			}
+			continue
 		}
-		constraint = constraint[:i]
-	} else if strings.IndexByte(constraint, byte('(')) > -1 {
-		panic(fmt.Sprintf("illegal constraint format: %s", constraint))
-	}
 
-	constraint = strings.TrimSpace(constraint)
-	v, ok := r.validators[constraint]
-	if !ok {
-		panic(fmt.Sprintf("unknown constraint: %s", constraint))
+		if constraints[i] == ',' || constraints[i] == '(' {
+			arg := strings.TrimSpace(string(buf[:b]))
+
+			if name == "" {
+				if arg == "" {
+					panic(fmt.Sprintf("illegal constraint format: %s", constraints))
+				}
+				name = arg
+			} else {
+				args = append(args, arg)
+			}
+			b = 0
+
+			if brace == 0 {
+				// Must be between constraints.
+				// Add what we have and reset.
+				results[name] = args
+				name = ""
+				args = []string{}
+			}
+			continue
+		}
+		buf[b] = constraints[i]
+		b++
 	}
-	return v.FailureMsg(), v.Validate(val, args)
+	arg := strings.TrimSpace(string(buf[:b]))
+	if name == "" {
+		name = arg
+	} else {
+		args = append(args, arg)
+	}
+	if name != "" {
+		results[name] = args
+	}
+	if brace != 0 {
+		panic(fmt.Sprintf("illegal constraint format: %s", constraints))
+	}
+	return results
 }
 
 func newValidationHandler() ValidationHandler {

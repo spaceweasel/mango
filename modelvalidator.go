@@ -3,6 +3,7 @@ package mango
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // ValidateFunc is the signature for implementing custom model validators.
@@ -62,6 +63,13 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 	return results, len(results) == 0
 }
 
+// TODO: update docs - Seeing this error?
+//
+//  panic: alpha validator can only validate strings not, *string
+//
+//  try using the pointer validator *alpha
+//
+//
 func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, constraints string) (map[string][]ValidationFailure, bool) {
 	results := make(map[string][]ValidationFailure)
 	switch rv.Kind() {
@@ -75,8 +83,47 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 			results[name+"."+k] = v
 		}
 	case reflect.Ptr:
+		// Split constraints into ones targetted at the pointer itself
+		// and ones for the dereferenced object. Constraints for the
+		// dereferenced value will be prefixed with '*', so that needs
+		// to be stripped off before being sent to the validator.
+		tests := mv.validationHandler.ParseConstraints(constraints)
+		derefTests := ""
+		ptrTests := ""
+		for constraint, args := range tests {
+			params := ""
+			if len(args) > 0 {
+				params += "(" + strings.Join(args, ",") + ")"
+			}
+			if len(constraint) > 0 && constraint[0] == '*' {
+				derefTests = constraint[1:] + params + ","
+			} else {
+				ptrTests = constraint + params + ","
+			}
+		}
+		ptrTests = strings.Trim(ptrTests, ",")
+		derefTests = strings.Trim(derefTests, ",")
+		// Validate the pointer itself...
+		if len(ptrTests) > 0 {
+			fails, ok := mv.validationHandler.IsValid(rv.Interface(), ptrTests)
+			if !ok {
+				results[name] = fails
+			}
+		}
+
+		// Now validate the dereferenced value...
+		if rv.IsNil() {
+			break
+		}
 		val := rv.Elem()
-		return mv.validateProperty(name, val, constraints)
+		details, ok := mv.validateProperty(name, val, derefTests)
+		if ok {
+			break
+		}
+		for k, v := range details {
+			results[k] = v
+		}
+
 	case reflect.Slice, reflect.Array:
 		if constraints != "" {
 			// validate the array/slice "as a container" first
@@ -121,7 +168,6 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 		}
 
 	case reflect.String,
-		//reflect.Map,
 		reflect.Int,
 		reflect.Int8,
 		reflect.Int16,
