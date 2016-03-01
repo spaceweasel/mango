@@ -72,9 +72,19 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 //
 func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, constraints string) (map[string][]ValidationFailure, bool) {
 	results := make(map[string][]ValidationFailure)
+	tests := mv.validationHandler.ParseConstraints(constraints)
+	ignore := false
+	for constraint := range tests {
+		if constraint == "ignorecontents" {
+			ignore = true
+			break
+		}
+	}
 	switch rv.Kind() {
 	case reflect.Struct:
-		// TODO: check if 'nested' constraint
+		if ignore {
+			break
+		}
 		details, ok := mv.Validate(rv.Interface())
 		if ok {
 			break
@@ -87,7 +97,6 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 		// and ones for the dereferenced object. Constraints for the
 		// dereferenced value will be prefixed with '*', so that needs
 		// to be stripped off before being sent to the validator.
-		tests := mv.validationHandler.ParseConstraints(constraints)
 		derefTests := ""
 		ptrTests := ""
 		for constraint, args := range tests {
@@ -112,7 +121,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 		}
 
 		// Now validate the dereferenced value...
-		if rv.IsNil() {
+		if rv.IsNil() || ignore {
 			break
 		}
 		val := rv.Elem()
@@ -132,8 +141,9 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 				results[name] = fails
 			}
 		}
-		// now validate each element, but only if they're structs
-		if rv.Type().Elem().Kind() != reflect.Struct {
+		// now validate each element, but only if they're structs and
+		// ignorecontents isn't set
+		if ignore || rv.Type().Elem().Kind() != reflect.Struct {
 			break
 		}
 		for i := 0; i < rv.Len(); i++ {
@@ -153,8 +163,9 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 				results[name] = fails
 			}
 		}
-		// now validate each element (value, not the key), but only if they're structs
-		if rv.Type().Elem().Kind() != reflect.Struct {
+		// now validate each element (value, not the key), but only
+		// if they're structs and ignorecontents isn't set
+		if ignore || rv.Type().Elem().Kind() != reflect.Struct {
 			break
 		}
 		for _, key := range rv.MapKeys() {

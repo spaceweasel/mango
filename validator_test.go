@@ -1822,6 +1822,17 @@ func TestIsValidPanicsWhenUnknownConstraint(t *testing.T) {
 	pv.IsValid("validator1", "test1")
 }
 
+func TestIsValidDoesNotPanicWhenUnknownConstraintIsIgnoreContents(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("The code panicked")
+		}
+	}()
+
+	pv := newValidationHandler()
+	pv.IsValid("validator1", "ignorecontents")
+}
+
 func TestIsValidPanicsWithCorrectErrorMessageWhenUnknownConstraint(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

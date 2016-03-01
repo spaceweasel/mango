@@ -64,6 +64,10 @@ func (r *elementValidationHandler) IsValid(val interface{}, constraints string) 
 	// have parameters which also have commas, e.g. range(3,8).
 	tests := r.ParseConstraints(constraints)
 	for name, args := range tests {
+		// ignorecontents is a special case instruction rather than constraint
+		if name == "ignorecontents" {
+			continue
+		}
 		v, ok := r.validators[name]
 		if !ok {
 			panic(fmt.Sprintf("unknown constraint: %s", name))

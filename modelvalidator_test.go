@@ -766,7 +766,7 @@ func TestCustomValidatorWithPointerModel(t *testing.T) {
 	}
 }
 
-func TestCustomValidatorreturnsFailureDetails(t *testing.T) {
+func TestCustomValidatorReturnsFailureDetails(t *testing.T) {
 	type model struct {
 		Name string
 		Age  int
@@ -1010,5 +1010,148 @@ func TestValidateModelWithIntKeyMapValidatesElementsWithErrorReturnsDetailsInMap
 
 	if got != want {
 		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+// ignorecontents
+
+func TestValidateModelInnerStructWhenIgnoreContentsReturnsNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name       string `validate:"alpha"`
+		Dimensions struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		} `validate:"ignorecontents"`
+	}{
+		"Mango", struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			1.6, 1.8,
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelInnerPointerStructWhenIgnoreContentsReturnsNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name       string `validate:"alpha"`
+		Dimensions *struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		} `validate:"ignorecontents"`
+	}{
+		"Mango", &struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			24.6, 53.8,
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithArrayWhenIgnoreContentsReturnsNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		} `validate:"ignorecontents"`
+	}{
+		"Mango", [2]struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{4.6, 31.8}, {14.6, 11.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithSliceWhenIgnoreContentsReturnsNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name   string `validate:"alpha"`
+		Shapes []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		} `validate:"ignorecontents"`
+	}{
+		"Mango", []struct {
+			Width  float32 `validate:"min(50)"`
+			Length float32 `validate:"min(60)"`
+		}{
+			{4.6, 51.8}, {14.6, 11.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
+	}
+}
+
+func TestValidateModelWithMapWhenIgnoreContentsReturnsNoErrors(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	type shape struct {
+		Width  float32 `validate:"min(50)"`
+		Length float32 `validate:"min(60)"`
+	}
+	test := struct {
+		Name   string           `validate:"alpha"`
+		Shapes map[string]shape `validate:"ignorecontents"`
+	}{
+		"Mango", map[string]shape{
+			"square":    shape{5.8, 5.8},
+			"rectangle": shape{14.6, 11.8},
+		},
+	}
+
+	_, ok := validator.Validate(&test)
+	want := true
+	got := ok
+
+	if got != want {
+		t.Errorf("Validate ok = %t, want %t", got, want)
 	}
 }
