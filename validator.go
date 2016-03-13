@@ -730,6 +730,115 @@ func (LenRangeValidator) FailureMsg() string {
 	return "Must have a quantity of elements within the permitted range."
 }
 
+// ContainsValidator tests whether a container holds a specific string.
+type ContainsValidator struct{}
+
+// Validate tests for a existence of a string within another string, Array, Slice
+// or Map (keys).
+// Returns true if val is a String, Array, Slice or Map containing the string
+// specified in params. Contains is case-sensitive.
+// Validate panics if val is not a String, Array, Slice or Map.
+func (ContainsValidator) Validate(val interface{}, params []string) bool {
+	s := ""
+	if len(params) > 0 {
+		s = params[0]
+	}
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.Map:
+		for _, key := range rv.MapKeys() {
+			el := reflect.ValueOf(key.Interface())
+			if el.Kind() == reflect.Ptr {
+				el = el.Elem()
+			}
+			if el.Kind() != reflect.String {
+				panic(fmt.Sprintf("contains validator can only validate maps with keys of string, not %T", key.Interface()))
+			}
+			if el.String() == s {
+				return true
+			}
+		}
+		return false
+	case reflect.Array, reflect.Slice:
+		for i := 0; i < rv.Len(); i++ {
+			el := rv.Index(i)
+			if el.Kind() == reflect.Ptr {
+				el = el.Elem()
+			}
+			if el.Kind() != reflect.String {
+				panic(fmt.Sprintf("contains validator can only validate arrays and slices of string, not %T", el.Interface()))
+			}
+			if el.String() == s {
+				return true
+			}
+		}
+		return false
+	case reflect.String:
+		return strings.Contains(val.(string), s)
+	default:
+		panic(fmt.Sprintf("contains validator can only validate strings, arrays, slices and maps, not %T", val))
+	}
+}
+
+// Type returns the constraint name (contains).
+func (ContainsValidator) Type() string {
+	return "contains"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (ContainsValidator) FailureMsg() string {
+	return "Must contain a specific string."
+}
+
+// InSetValidator tests a value is in a set.
+type InSetValidator struct{}
+
+// Validate tests for a value within a set of values.
+// Returns true if val is a string or int within the set specified in params.
+// Validate panics if val is not a string or int.
+func (InSetValidator) Validate(val interface{}, params []string) bool {
+
+	switch reflect.TypeOf(val).Kind() {
+	case reflect.String:
+		for _, p := range params {
+			s := strings.TrimSpace(p)
+			if val.(string) == s {
+				return true
+			}
+		}
+	case reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64:
+		v := reflect.ValueOf(val).Int()
+
+		for _, p := range params {
+			s := strings.TrimSpace(p)
+			i, err := strconv.ParseInt(s, 10, 64) //strconv.Atoi(s)
+			if err != nil {
+				panic("non-integer parameter used in InSetValidator")
+			}
+			if v == i {
+				return true
+			}
+		}
+	default:
+		panic(fmt.Sprintf("inset validator can only validate strings and ints, not %T", val))
+	}
+	return false
+}
+
+// Type returns the constraint name (inset).
+func (InSetValidator) Type() string {
+	return "inset"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (InSetValidator) FailureMsg() string {
+	return "Must be in the permitted set."
+}
+
 // NotEmptyValidator tests for an empty String, Array, Slice or Map.
 type NotEmptyValidator struct{}
 

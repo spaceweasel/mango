@@ -646,6 +646,7 @@ func TestPrefixValidatorType(t *testing.T) {
 		t.Errorf("Valid = %q, want %q", got, want)
 	}
 }
+
 func TestPrefixValidatorFailureMessage(t *testing.T) {
 	want := "Must have the correct prefix."
 
@@ -656,6 +657,7 @@ func TestPrefixValidatorFailureMessage(t *testing.T) {
 		t.Errorf("Message = %q, want %q", got, want)
 	}
 }
+
 func TestPrefixValidator(t *testing.T) {
 	var tests = []struct {
 		input   string
@@ -714,6 +716,7 @@ func TestSuffixValidatorType(t *testing.T) {
 		t.Errorf("Valid = %q, want %q", got, want)
 	}
 }
+
 func TestSuffixValidatorFailureMessage(t *testing.T) {
 	want := "Must have the correct suffix."
 
@@ -724,6 +727,7 @@ func TestSuffixValidatorFailureMessage(t *testing.T) {
 		t.Errorf("Message = %q, want %q", got, want)
 	}
 }
+
 func TestSuffixValidator(t *testing.T) {
 	var tests = []struct {
 		input   string
@@ -1522,6 +1526,217 @@ func TestLenRangeValidatorPanicsWhenBothParametersMissing(t *testing.T) {
 	}()
 	v := LenRangeValidator{}
 	v.Validate(345, []string{})
+}
+
+//contins
+func TestContainValidatorType(t *testing.T) {
+	want := "contains"
+
+	v := ContainsValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestContainsValidatorFailureMessage(t *testing.T) {
+	want := "Must contain a specific string."
+
+	v := ContainsValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestContainsValidator(t *testing.T) {
+	a := "1"
+	b := "2"
+	c := "3"
+	d := "4"
+	e := "5"
+
+	var tests = []struct {
+		input   interface{}
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"CHEESEBICYCLE", []string{"Bicycle"}, false, "Uppercase"},
+		{"cheesebicycle", []string{"Bicycle"}, false, "Lowercase"},
+		{"CheeseBicycle", []string{"Bicycle"}, true, "End"},
+		{"CheeseBicycle", []string{"Bicycles"}, false, "ExtraSuffix"},
+		{"CheeseBicycle", []string{"Cheese"}, true, "Start"},
+		{"Cheese81cycl3", []string{"81cycl3"}, true, "Digits"},
+		{"Cheese Bicycle", []string{"se Bi"}, true, "Mid Spaces"},
+		{"CheeseBicycle", []string{"MyCheese"}, false, "ExtraPrefix"},
+		{"seBi", []string{"CheeseBicycle"}, false, "Reverse Subset"},
+		{"CheeseBicycle", []string{""}, true, "EmptyTest"},
+		{"CheeseBicycle", []string{}, true, "MissingTest"},
+		{"", []string{"MyCheese"}, false, "Empty"},
+		{"", []string{}, true, "BothEmpty"},
+		{[0]string{}, []string{}, false, "emptyarray"},
+		{[0]string{}, []string{"3"}, false, "emptyarray"},
+		{[5]string{"1", "2", "3", "4", "5"}, []string{"3"}, true, "array"},
+		{[5]string{"1", "2", "3", "4", "5"}, []string{"6"}, false, "array"},
+		{[5]string{"123", "234", "345", "456", "567"}, []string{"4"}, false, "whole string array"},
+		{[5]string{"1", "2", "3", "4", "5"}, []string{"234"}, false, "whole string array"},
+		{[]string{}, []string{}, false, "emptyslice"},
+		{[]string{}, []string{"3"}, false, "emptyslice"},
+		{[]string{"1", "2", "3", "4", "5"}, []string{"3"}, true, "slice"},
+		{[]string{"1", "2", "3", "4", "5"}, []string{"6"}, false, "slice"},
+		{[]string{"123", "234", "345", "456", "567"}, []string{"4"}, false, "whole string slice"},
+		{[]string{"1", "2", "3", "4", "5"}, []string{"234"}, false, "whole string slice"},
+		{[5]*string{&a, &b, &c, &d, &e}, []string{"3"}, true, "pointer array"},
+		{[]*string{&a, &b, &c, &d, &e}, []string{"3"}, true, "pointer slice"},
+		{map[string]int{}, []string{}, false, "emptymap"},
+		{map[string]int{"a": 1, "b": 2, "c": 3}, []string{"b"}, true, "map"},
+		{map[string]int{"a": 1, "b": 2, "c": 3}, []string{"e"}, false, "map"},
+		{map[string]int{"abc": 1, "bcd": 2, "cde": 3}, []string{"b"}, false, "whole string map"},
+		{map[string]int{"a": 1, "b": 2, "c": 3}, []string{"abc"}, false, "whole string map"},
+		{map[*string]int{&a: 1, &b: 2, &c: 3}, []string{"3"}, true, "pointer map"},
+	}
+
+	v := ContainsValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate (%s): %q contains(%s) = %v, want %v", test.comment, test.input, test.args[0], got, test.want)
+		}
+	}
+}
+
+func TestContainsValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "contains validator can only validate strings, arrays, slices and maps, not int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := ContainsValidator{}
+	v.Validate(32, []string{})
+}
+
+func TestContainsValidatorPanicsWhenInputNotSliceString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "contains validator can only validate arrays and slices of string, not int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := ContainsValidator{}
+	v.Validate([]int{1, 2, 3, 4, 5}, []string{"3"})
+}
+
+func TestContainsValidatorPanicsWhenInputNotMapStringKey(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "contains validator can only validate maps with keys of string, not int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := ContainsValidator{}
+	v.Validate(map[int]string{1: "1", 2: "2", 3: "3", 4: "4", 5: "5"}, []string{"3"})
+}
+
+//inset
+func TestInSetValidatorType(t *testing.T) {
+	want := "inset"
+
+	v := InSetValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestInSetValidatorFailureMessage(t *testing.T) {
+	want := "Must be in the permitted set."
+
+	v := InSetValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestInSetValidator(t *testing.T) {
+	var tests = []struct {
+		input   interface{}
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"CHEESE", []string{"Cheese", "Bicycle", "Mango"}, false, "Uppercase"},
+		{"cheese", []string{"Cheese", "Bicycle", "Mango"}, false, "Lowercase"},
+		{"Cheese", []string{"Cheese", "Bicycle", "Mango"}, true, "Match"},
+		{"Bicycle", []string{"Cheese", "Bicycle", "Mango"}, true, "Middle"},
+		{"Bicycle", []string{"Cheese", " Bicycle ", "Mango"}, true, "Whitespace"},
+		{"", []string{"Cheese", "", "Mango"}, true, "Empty"},
+		{"", []string{"Cheese", "Mango"}, false, "Missing"},
+		{2, []string{"1", "2", "3"}, true, "Digits"},
+		{5, []string{"1", "2", "3"}, false, "Digits"},
+		{2, []string{"1", " 2 ", "3"}, true, "Whitespace"},
+	}
+
+	v := InSetValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate (%s): %q inset(%s) = %v, want %v", test.comment, test.input, test.args[0], got, test.want)
+		}
+	}
+}
+
+func TestInSetValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "inset validator can only validate strings and ints, not float64"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := InSetValidator{}
+	v.Validate(32.6, []string{"45", "67"})
+}
+
+func TestInSetValidatorPanicsWhenInputIsIntAndParamsAreNotInts(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "non-integer parameter used in InSetValidator"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := InSetValidator{}
+	v.Validate(32, []string{"45", "67", "45.7"})
 }
 
 //notempty
