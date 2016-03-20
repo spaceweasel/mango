@@ -34,6 +34,7 @@ type Router struct {
 	AutoPopulateOptionsAllow bool
 	validationHandler        ValidationHandler
 	modelValidator           ModelValidator
+	CompMinLength            int
 }
 
 // AddValidator adds a new validator to the collection.
@@ -66,6 +67,7 @@ func NewRouter() *Router {
 	r.modelValidator = newModelValidator(r.validationHandler)
 	r.encoderEngine = newEncoderEngine()
 	r.AutoPopulateOptionsAllow = true
+	r.CompMinLength = 300
 	return &r
 }
 
@@ -145,7 +147,8 @@ func (r *Router) Options(pattern string, handlerFunc ContextHandlerFunc) {
 // ServeHTTP dispatches the request to the handler whose pattern
 // matches the request URL.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	resp := NewWatchedResponse(w)
+	ae := req.Header.Get("Accept-Encoding")
+	resp := NewResponseWriter(w, ae, r.CompMinLength)
 	reqLog := NewRequestLog(req)
 	defer func() {
 		if r.RequestLogger == nil {
