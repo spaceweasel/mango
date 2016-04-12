@@ -64,6 +64,7 @@ type Context struct {
 	Identity       Identity
 	responseReady  bool
 	modelValidator ModelValidator
+	X              interface{}
 }
 
 // ContextHandlerFunc type is an adapter to allow the use of ordinary
@@ -148,12 +149,11 @@ func (c *Context) Redirect(urlStr string, code int) {
 // 	fmt.Fprintf(c.Writer, "")
 // }
 
-
 func (c *Context) contentDecoder() (Decoder, error) {
 	ct := c.Request.Header.Get("Content-Type")
 	ct = strings.Replace(ct, " ", "", -1)
 	decoder, err := c.encoderEngine.GetDecoder(c.Request.Body, ct)
-	if(err != nil){
+	if err != nil {
 		// If the full Content-Type doesn't match try matching only up to the ;
 		decoder, err = c.encoderEngine.GetDecoder(c.Request.Body, strings.Split(ct, ";")[0])
 	}
@@ -176,7 +176,7 @@ func (c *Context) acceptableMediaTypes() []string {
 	sort.Sort(mt)
 	r := []string{}
 	for _, t := range mt {
-		if(!t.Empty()){
+		if !t.Empty() {
 			r = append(r, t.String())
 		}
 	}
