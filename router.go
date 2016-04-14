@@ -25,30 +25,16 @@ type RequestLogFunc func(*RequestLog)
 // rather than creating a new uninitialised instance.
 // TODO: Add more info here.
 type Router struct {
+	ValidationHandler
+	EncoderEngine
 	routes                   routes
 	preHooks                 []ContextHandlerFunc
 	postHooks                []ContextHandlerFunc
-	encoderEngine            EncoderEngine
 	RequestLogger            RequestLogFunc
 	ErrorLogger              func(error)
 	AutoPopulateOptionsAllow bool
-	validationHandler        ValidationHandler
 	modelValidator           ModelValidator
 	CompMinLength            int
-}
-
-// AddValidator adds a new validator to the collection.
-// AddValidator panics if a validator with the same Type()
-// exists.
-func (r *Router) AddValidator(v Validator) {
-	r.validationHandler.AddValidator(v)
-}
-
-// AddValidators adds a slice of new validators to the collection.
-// AddValidators panics if a validator with the same Type()
-// exists.
-func (r *Router) AddValidators(validators []Validator) {
-	r.validationHandler.AddValidators(validators)
 }
 
 // AddModelValidator adds a custom model validator to the collection.
@@ -62,10 +48,10 @@ func (r *Router) AddModelValidator(m interface{}, fn ValidateFunc) {
 // and route handling functionality.
 func NewRouter() *Router {
 	r := Router{}
-	r.validationHandler = newValidationHandler()
-	r.routes = newTree(r.validationHandler)
-	r.modelValidator = newModelValidator(r.validationHandler)
-	r.encoderEngine = newEncoderEngine()
+	r.ValidationHandler = newValidationHandler()
+	r.routes = newTree(r.ValidationHandler)
+	r.modelValidator = newModelValidator(r.ValidationHandler)
+	r.EncoderEngine = newEncoderEngine()
 	r.AutoPopulateOptionsAllow = true
 	r.CompMinLength = 300
 	return &r
@@ -205,7 +191,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Request:        req,
 		Writer:         resp,
 		RouteParams:    resource.RouteParams,
-		encoderEngine:  r.encoderEngine,
+		encoderEngine:  r.EncoderEngine,
 		modelValidator: r.modelValidator,
 	}
 
@@ -302,18 +288,4 @@ func (r *Router) RegisterModules(modules []Registerer) {
 	for _, m := range modules {
 		m.Register(r)
 	}
-}
-
-// AddEncoderFunc adds an EncoderFunc fn for the specified content-type ct.
-// If an EncoderFunc pre-exists for content-type ct, then fn will not be added
-// and AddEncoderFunc will return an error. Successful addition return nil.
-func (r *Router) AddEncoderFunc(ct string, fn EncoderFunc) error {
-	return r.encoderEngine.AddEncoderFunc(ct, fn)
-}
-
-// AddDecoderFunc adds a DecoderFunc fn for the specified content-type ct.
-// If a DecoderFunc pre-exists for content-type ct, then fn will not be added
-// and AddDecoderFunc will return an error. Successful addition return nil.
-func (r *Router) AddDecoderFunc(ct string, fn DecoderFunc) error {
-	return r.encoderEngine.AddDecoderFunc(ct, fn)
 }

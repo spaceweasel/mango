@@ -501,7 +501,7 @@ func TestPreHookContextResponsesCanSerializeModel(t *testing.T) {
 
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = newEncoderEngine()
+	rtr.EncoderEngine = newEncoderEngine()
 	rtr.AddPreHook(ph)
 	rtr.Get("/test", func(ctx *Context) {
 		ctx.RespondWith("Mango trees").WithStatus(200)
@@ -559,7 +559,7 @@ func TestGetResponseStatus(t *testing.T) {
 func TestGetEncodedResponse(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = &mockEncoderEngine{}
+	rtr.EncoderEngine = &mockEncoderEngine{}
 
 	var model = struct {
 		a string
@@ -588,7 +588,7 @@ func TestGetEncodedResponse(t *testing.T) {
 func TestResponseCodeWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = &mockEncoderEngine{}
+	rtr.EncoderEngine = &mockEncoderEngine{}
 
 	var model = struct {
 		a string
@@ -617,7 +617,7 @@ func TestResponseCodeWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 func TestResponseMessageWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = &mockEncoderEngine{}
+	rtr.EncoderEngine = &mockEncoderEngine{}
 
 	var model = struct {
 		a string
@@ -646,7 +646,7 @@ func TestResponseMessageWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 func TestResponseCodeWhenErrorEncodingPayload(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = &mockEncoderEngine{}
+	rtr.EncoderEngine = &mockEncoderEngine{}
 
 	var model = struct {
 		a string
@@ -675,7 +675,7 @@ func TestResponseCodeWhenErrorEncodingPayload(t *testing.T) {
 func TestResponseMessageWhenErrorEncodingPayload(t *testing.T) {
 	rtr := Router{}
 	rtr.routes = newMockRoutes()
-	rtr.encoderEngine = &mockEncoderEngine{}
+	rtr.EncoderEngine = &mockEncoderEngine{}
 
 	var model = struct {
 		a string
@@ -704,11 +704,11 @@ func TestResponseMessageWhenErrorEncodingPayload(t *testing.T) {
 func TestNewRouterSetsValidationHandler(t *testing.T) {
 	want := reflect.TypeOf(&elementValidationHandler{}).String()
 	r := NewRouter()
-	if r.validationHandler == nil {
+	if r.ValidationHandler == nil {
 		t.Errorf("ValidationHandler type = \"<nil>\", want %q", want)
 		return
 	}
-	got := reflect.TypeOf(r.validationHandler).String()
+	got := reflect.TypeOf(r.ValidationHandler).String()
 	if got != want {
 		t.Errorf("ValidationHandler = %q, want %q", got, want)
 	}
@@ -744,11 +744,11 @@ func TestNewRouterSetsRoutesValidationHandler(t *testing.T) {
 func TestNewRouterSetsEncoderEngine(t *testing.T) {
 	want := reflect.TypeOf(&encoderEngine{}).String()
 	r := NewRouter()
-	if r.encoderEngine == nil {
+	if r.EncoderEngine == nil {
 		t.Errorf("EncoderEngine type = \"<nil>\", want %q", want)
 		return
 	}
-	got := reflect.TypeOf(r.encoderEngine).String()
+	got := reflect.TypeOf(r.EncoderEngine).String()
 	if got != want {
 		t.Errorf("EncoderEngine = %q, want %q", got, want)
 	}
@@ -757,7 +757,7 @@ func TestNewRouterSetsEncoderEngine(t *testing.T) {
 func TestNewRouterInitialisesEncoderEngineWithDefaultMediaType(t *testing.T) {
 	want := DefaultMediaType
 	r := NewRouter()
-	got := r.encoderEngine.DefaultMediaType()
+	got := r.EncoderEngine.DefaultMediaType()
 	if got != want {
 		t.Errorf("EncoderEngine.DefaultMediaType = %q, want %q", got, want)
 	}
@@ -858,74 +858,8 @@ func encFunc(io.Writer) Encoder {
 	return nil
 }
 
-func TestAddEncoderFuncForwardsRequestToEncoderEngine(t *testing.T) {
-	want := "mango/test-encFunc"
-	r := Router{}
-	ee := mockEncoderEngine{}
-	r.encoderEngine = &ee
-
-	r.AddEncoderFunc("mango/test", encFunc)
-	if len(ee.EncoderRequests) == 0 {
-		t.Errorf("Requests = 0, want 1")
-		return
-	}
-	got := ee.EncoderRequests[0]
-	if got != want {
-		t.Errorf("Recorded request = %q, want %q", got, want)
-	}
-}
-
-func TestAddEncoderFuncCapturesEncoderEngineError(t *testing.T) {
-	want := "error/error"
-	r := Router{}
-	r.encoderEngine = &mockEncoderEngine{}
-
-	err := r.AddEncoderFunc("error/error", encFunc)
-	if err == nil {
-		t.Errorf("Error = <nil>, want %q", want)
-		return
-	}
-	got := err.Error()
-	if got != want {
-		t.Errorf("Error = %q, want %q", got, want)
-	}
-}
-
 func decFunc(io.ReadCloser) Decoder {
 	return nil
-}
-
-func TestAddDecoderFuncForwardsRequestToEncoderEngine(t *testing.T) {
-	want := "mango/test-decFunc"
-	r := Router{}
-	ee := mockEncoderEngine{}
-	r.encoderEngine = &ee
-
-	r.AddDecoderFunc("mango/test", decFunc)
-	if len(ee.DecoderRequests) == 0 {
-		t.Errorf("Requests = 0, want 1")
-		return
-	}
-	got := ee.DecoderRequests[0]
-	if got != want {
-		t.Errorf("Recorded request = %q, want %q", got, want)
-	}
-}
-
-func TestAddDecoderFuncCapturesEncoderEngineError(t *testing.T) {
-	want := "error/error"
-	r := Router{}
-	r.encoderEngine = &mockEncoderEngine{}
-
-	err := r.AddDecoderFunc("error/error", decFunc)
-	if err == nil {
-		t.Errorf("Error = <nil>, want %q", want)
-		return
-	}
-	got := err.Error()
-	if got != want {
-		t.Errorf("Error = %q, want %q", got, want)
-	}
 }
 
 func TestRouterAddValidator(t *testing.T) {
@@ -933,9 +867,9 @@ func TestRouterAddValidator(t *testing.T) {
 	r := Router{}
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	r.validationHandler = &evh
+	r.ValidationHandler = &evh
 	r.AddValidator(Int32Validator{})
-	_, valid := r.validationHandler.IsValid("123", "int32")
+	_, valid := r.IsValid("123", "int32")
 	got := valid
 	if got != want {
 		t.Errorf("Valid = %t, want %t", got, want)
@@ -947,9 +881,9 @@ func TestRouterAddValidators(t *testing.T) {
 	r := Router{}
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	r.validationHandler = &evh
+	r.ValidationHandler = &evh
 	r.AddValidators([]Validator{Int32Validator{}})
-	_, valid := r.validationHandler.IsValid("123", "int32")
+	_, valid := r.IsValid("123", "int32")
 	got := valid
 	if got != want {
 		t.Errorf("Valid = %t, want %t", got, want)
@@ -972,7 +906,7 @@ func TestRouterAddValidatorPanicsIfConstraintConflicts(t *testing.T) {
 	r := Router{}
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	r.validationHandler = &evh
+	r.ValidationHandler = &evh
 	r.AddValidator(Int32Validator{})
 	r.AddValidator(dupValidator{})
 }
@@ -993,7 +927,7 @@ func TestRouterAddValidatorsPanicsIfConstraintConflicts(t *testing.T) {
 	r := Router{}
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	r.validationHandler = &evh
+	r.ValidationHandler = &evh
 	r.AddValidators([]Validator{
 		Int32Validator{},
 		dupValidator{},
@@ -1286,8 +1220,8 @@ func TestRouterSetsContextModelValidator(t *testing.T) {
 	rtr.routes = newMockRoutes()
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	rtr.validationHandler = &evh
-	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+	rtr.ValidationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.ValidationHandler)
 
 	rtr.Get("/test", func(ctx *Context) {
 		if ctx.modelValidator == nil {
@@ -1306,8 +1240,8 @@ func TestRouterAddModelValidatorAddsToCollection(t *testing.T) {
 	rtr.routes = newMockRoutes()
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	rtr.validationHandler = &evh
-	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+	rtr.ValidationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.ValidationHandler)
 
 	type model struct {
 		Name string
@@ -1353,8 +1287,8 @@ func TestRouterNewValidatorsAddedAreAvailableToModelValidator(t *testing.T) {
 	rtr.routes = newMockRoutes()
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
-	rtr.validationHandler = &evh
-	rtr.modelValidator = newModelValidator(rtr.validationHandler)
+	rtr.ValidationHandler = &evh
+	rtr.modelValidator = newModelValidator(rtr.ValidationHandler)
 
 	rtr.AddValidator(CheeseValidator{})
 
