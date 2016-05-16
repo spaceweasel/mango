@@ -230,6 +230,25 @@ func TestWhenNoMatchingHandlerForOPTIONSRequestAndAutoPopulateOptionsAllow(t *te
 	}
 }
 
+func TestWhenNoMatchingHandlerRequestAndAutoPopulateOptionsAllow(t *testing.T) {
+	want := 405
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+	rtr.AutoPopulateOptionsAllow = true
+	rtr.Get("/test", testFunc)
+	rtr.Post("/test", testFunc)
+	rtr.Delete("/test", testFunc)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/test", nil)
+	rtr.ServeHTTP(w, req)
+
+	got := w.Code
+	if got != want {
+		t.Errorf("Status = %d, want %d", got, want)
+	}
+}
+
 func TestWhenNoErrorAndNoStatusSetServeHTTPReturns200OK(t *testing.T) {
 	want := 200
 	rtr := Router{}

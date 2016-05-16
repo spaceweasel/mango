@@ -181,7 +181,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			for k := range resource.Handlers {
 				resp.Header().Add("Allow", k)
 			}
-			return
 		}
 		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
