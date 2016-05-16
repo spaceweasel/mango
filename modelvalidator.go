@@ -32,7 +32,6 @@ func (mv contextModelValidator) AddCustomValidator(m interface{}, fn ValidateFun
 }
 
 func (mv contextModelValidator) Validate(m interface{}) (map[string][]ValidationFailure, bool) {
-
 	results := make(map[string][]ValidationFailure)
 	var rv reflect.Value
 	if reflect.TypeOf(m).Kind() == reflect.Ptr {
@@ -48,8 +47,11 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 	}
 
 	for i := 0; i < rv.NumField(); i++ {
-		value := rv.Field(i)
 		fieldType := rv.Type().Field(i)
+		if len(fieldType.PkgPath) > 0 {
+			continue
+		}
+		value := rv.Field(i)
 		constraints := fieldType.Tag.Get("validate")
 
 		details, ok := mv.validateProperty(fieldType.Name, value, constraints)

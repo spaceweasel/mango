@@ -3,6 +3,7 @@ package mango
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestValidateModelByValueDoesNotPanic(t *testing.T) {
@@ -37,6 +38,68 @@ func TestValidateModelByRefDoesNotPanic(t *testing.T) {
 		LastName  string `validate:"alpha"`
 	}{
 		"Jeff", "Mango",
+	}
+	validator.Validate(&test)
+}
+
+func TestValidateModelWithUnexportedFieldDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("The code panicked")
+		}
+	}()
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		FirstName string `validate:"alpha"`
+		LastName  string `validate:"alpha"`
+		nickname  string
+	}{
+		"Jeff", "Mango", "jango",
+	}
+	validator.Validate(&test)
+}
+
+func TestValidateModelWithLocalTypeWithUnexportedFieldDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("The code panicked")
+		}
+	}()
+
+	type WithUnexportedField struct {
+		explode int
+	}
+
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		FirstName   string `validate:"alpha"`
+		LastName    string `validate:"alpha"`
+		DangerField WithUnexportedField
+	}{
+		"Jeff", "Mango", WithUnexportedField{},
+	}
+	validator.Validate(&test)
+}
+
+func TestValidateModelWithPackageTypeWithUnexportedFieldDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("The code panicked")
+		}
+	}()
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		FirstName string `validate:"alpha"`
+		LastName  string `validate:"alpha"`
+		DOB       time.Time
+	}{
+		"Jeff", "Mango", time.Now(),
 	}
 	validator.Validate(&test)
 }
