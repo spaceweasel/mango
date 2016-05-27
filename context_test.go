@@ -541,8 +541,10 @@ func TestAcceptableMediaTypesPreferSpecificRangeOverAnyRange(t *testing.T) {
 func TestWhenAcceptHeaderEmptyAndDefaultMediaTypeNotSetGetEncoderReturnsError(t *testing.T) {
 	want := "no encoder for content-type: "
 	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
 	c := Context{
 		Request:       req,
+		Writer:        w,
 		encoderEngine: &encoderEngine{},
 	}
 
@@ -557,8 +559,10 @@ func TestWhenAcceptHeaderEmptyAndDefaultMediaTypeNotSetGetEncoderReturnsError(t 
 func TestWhenAcceptHeaderEmptyAndDefaultMediaTypeSetGetEncoderReturnsNoError(t *testing.T) {
 	want := error(nil)
 	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
 	c := Context{
 		Request:       req,
+		Writer:        w,
 		encoderEngine: newEncoderEngine(),
 	}
 	c.encoderEngine.SetDefaultMediaType("application/json")
@@ -573,8 +577,10 @@ func TestWhenAcceptHeaderEmptyAndDefaultMediaTypeSetGetEncoderReturnsNoError(t *
 func TestWhenAcceptHeaderEmptyGetEncoderUsesDefaultMediaType(t *testing.T) {
 	want := "application/json"
 	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
 	c := Context{
 		Request:       req,
+		Writer:        w,
 		encoderEngine: &encoderEngine{},
 	}
 	c.encoderEngine.SetDefaultMediaType("application/json")
@@ -591,11 +597,75 @@ func TestWhenAcceptHeaderStarSlashStarGetEncoderUsesDefaultMediaType(t *testing.
 	want := "application/json"
 	req, _ := http.NewRequest("GET", "someurl", nil)
 	req.Header.Set("Accept", "*/*")
+	w := httptest.NewRecorder()
 	c := Context{
 		Request:       req,
+		Writer:        w,
 		encoderEngine: &encoderEngine{},
 	}
 	c.encoderEngine.SetDefaultMediaType("application/json")
+
+	_, contentType, _ := c.GetEncoder()
+
+	got := contentType
+	if got != want {
+		t.Errorf("ContentType = %q, want %q", got, want)
+	}
+}
+
+func TestWhenAcceptHeaderEmptyAndResponseContentTypeSetGetEncoderUsesSpecifiedMediaType(t *testing.T) {
+	want := "application/xml"
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	w := httptest.NewRecorder()
+	c := Context{
+		Request:       req,
+		Writer:        w,
+		encoderEngine: &encoderEngine{},
+	}
+	c.Writer.Header().Set("Content-Type", "application/xml")
+	c.encoderEngine.SetDefaultMediaType("application/json")
+
+	_, contentType, _ := c.GetEncoder()
+
+	got := contentType
+	if got != want {
+		t.Errorf("ContentType = %q, want %q", got, want)
+	}
+}
+
+func TestWhenAcceptHeaderStarSlashStarAndResponseContentTypeSetGetEncoderUsesSpecifiedMediaType(t *testing.T) {
+	want := "application/xml"
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	req.Header.Set("Accept", "*/*")
+	w := httptest.NewRecorder()
+	c := Context{
+		Request:       req,
+		Writer:        w,
+		encoderEngine: &encoderEngine{},
+	}
+	c.Writer.Header().Set("Content-Type", "application/xml")
+	c.encoderEngine.SetDefaultMediaType("application/json")
+
+	_, contentType, _ := c.GetEncoder()
+
+	got := contentType
+	if got != want {
+		t.Errorf("ContentType = %q, want %q", got, want)
+	}
+}
+
+func TestWhenAcceptHeaderSetAndResponseContentTypeSetGetEncoderUsesAcceptHeaderMediaType(t *testing.T) {
+	want := "application/json"
+	req, _ := http.NewRequest("GET", "someurl", nil)
+	req.Header.Set("Accept", "application/json")
+	w := httptest.NewRecorder()
+	c := Context{
+		Request:       req,
+		Writer:        w,
+		encoderEngine: &encoderEngine{},
+	}
+	c.Writer.Header().Set("Content-Type", "application/xml")
+	c.encoderEngine.SetDefaultMediaType("application/gob")
 
 	_, contentType, _ := c.GetEncoder()
 

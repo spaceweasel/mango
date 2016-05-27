@@ -197,7 +197,11 @@ func (c *Context) GetEncoder() (Encoder, string, error) {
 	var mt string
 	for _, mt = range mts {
 		if mt == "*/*" {
-			mt = c.encoderEngine.DefaultMediaType()
+			// use specified encoding if specified in response header
+			mt = c.Writer.Header().Get("Content-Type")
+			if mt == "" {
+				mt = c.encoderEngine.DefaultMediaType()
+			}
 		}
 		var encoder Encoder
 		encoder, err = c.encoderEngine.GetEncoder(c.Writer, mt)
