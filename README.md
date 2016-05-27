@@ -1,6 +1,6 @@
 # Mango [![Build Status](https://travis-ci.org/spaceweasel/mango.svg?branch=master)](https://travis-ci.org/spaceweasel/mango) [![Coverage Status](http://codecov.io/github/spaceweasel/mango/coverage.svg?branch=master)](http://codecov.io/github/spaceweasel/mango?branch=master) [![GoDoc](http://img.shields.io/badge/godoc-reference-5272B4.svg)](https://godoc.org/github.com/spaceweasel/mango) [![MIT](https://img.shields.io/npm/l/express.svg)](https://github.com/spaceweasel/mango/blob/master/LICENSE)
 
-Mango is esentially a routing package designed to simplify the development of web service code in Golang. The Router object implements the standard library's http.Handler interface, so it can be used with the http.ListenAndServe method.
+Mango is essentially a routing package designed to simplify the development of web service code in Golang. The Router object implements the standard library's http.Handler interface, so it can be used with the http.ListenAndServe method.
 
 Mango uses a context per request approach which enables simplified handlers, as
 much of the boiler plate work is done for you. The Context object takes care

@@ -16,8 +16,13 @@ type Response struct {
 }
 
 // WithModel sets the Model that will be serialized for the response.
-// The serialization mechanism will depend on the request Accept header
-// and the encoding DefaultMediaType.
+// The serialization mechanism will depend on the request Accept header,
+// the encoding DefaultMediaType and whether the WithContentType method
+// has been used.
+// If the Accept request header is missing, empty or equal to "*/*", then
+// the model will be encoded with the default media type. If required, the
+// default media type can be overridden for the individual response using
+// WithContentType.
 // This method returns the Response object and can be chained.
 func (r *Response) WithModel(m interface{}) *Response {
 	r.context.model = m
@@ -41,6 +46,10 @@ func (r *Response) WithHeader(key, value string) *Response {
 }
 
 // WithContentType sets the Content-Type header of the response.
+// WithContentType overrides the default media type for this individual
+// response. If the response contains a model and the Accept request header
+// is missing, empty or equal to "*/*", then the model will be encoded with
+// type ct.
 // This method returns the Response object and can be chained.
 func (r *Response) WithContentType(ct string) *Response {
 	r.context.Writer.Header().Set("Content-Type", ct)
@@ -91,7 +100,9 @@ func (c *Context) Respond() *Response {
 // Any other type is deemed to be a model which will be serialized.
 //
 // The serialization mechanism for the model will depend on the
-// request Accept header and the encoding DefaultMediaType.
+// request Accept header, the encoding DefaultMediaType and whether
+// the WithContentType method has been used. See the Response struct
+// for more details.
 // This method returns the Response object and can be chained.
 func (c *Context) RespondWith(d interface{}) *Response {
 	response := &Response{context: c}
