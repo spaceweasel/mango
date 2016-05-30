@@ -80,7 +80,7 @@ func TestGetAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["GET"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -96,7 +96,7 @@ func TestPostAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["POST"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -112,7 +112,7 @@ func TestPutAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["PUT"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -128,7 +128,7 @@ func TestPatchAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["PATCH"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestDeleteAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["DELETE"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -160,7 +160,7 @@ func TestHeadAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["HEAD"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -176,7 +176,7 @@ func TestOptionsAddsHandlerToRoutes(t *testing.T) {
 	h := resource.Handlers["OPTIONS"]
 	got := extractFnName(h)
 	if got != want {
-		t.Errorf("Handler function = %q, want %q", got, want)
+		t.Errorf("Handler function got %q, want %q", got, want)
 	}
 }
 
@@ -191,7 +191,7 @@ func TestWhenNoMatchingRouteServeHTTPReturns404NotFound(t *testing.T) {
 
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -207,7 +207,7 @@ func TestWhenNoMatchingHandlerServeHTTPReturns405MethodNotAllowed(t *testing.T) 
 
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -226,7 +226,7 @@ func TestWhenNoMatchingHandlerForOPTIONSRequestAndAutoPopulateOptionsAllow(t *te
 	sort.Strings(w.HeaderMap["Allow"])
 	got := strings.Join(w.HeaderMap["Allow"], ", ")
 	if got != want {
-		t.Errorf("Allow = %q, want %q", got, want)
+		t.Errorf("Allow got %q, want %q", got, want)
 	}
 }
 
@@ -245,7 +245,7 @@ func TestWhenNoMatchingHandlerRequestAndAutoPopulateOptionsAllow(t *testing.T) {
 
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -261,7 +261,7 @@ func TestWhenNoErrorAndNoStatusSetServeHTTPReturns200OK(t *testing.T) {
 
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -285,7 +285,7 @@ func TestAddPreHookAppendsToHookList(t *testing.T) {
 
 	got := callStack
 	if got != want {
-		t.Errorf("Status = %q, want %q", got, want)
+		t.Errorf("Status got %q, want %q", got, want)
 	}
 }
 
@@ -317,7 +317,7 @@ func TestPreHooksCalledInOrder(t *testing.T) {
 
 	got := callStack
 	if got != want {
-		t.Errorf("Status = %q, want %q", got, want)
+		t.Errorf("Status got %q, want %q", got, want)
 	}
 }
 
@@ -341,7 +341,7 @@ func TestAddPostHookAppendsToHookList(t *testing.T) {
 
 	got := callStack
 	if got != want {
-		t.Errorf("Status = %q, want %q", got, want)
+		t.Errorf("Status got %q, want %q", got, want)
 	}
 }
 
@@ -373,7 +373,7 @@ func TestPostHooksCalledInOrder(t *testing.T) {
 
 	got := callStack
 	if got != want {
-		t.Errorf("Status = %q, want %q", got, want)
+		t.Errorf("Status got %q, want %q", got, want)
 	}
 }
 
@@ -395,13 +395,13 @@ func TestPostHookResponsesAreIgnored(t *testing.T) {
 	want := 200
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 
 	wantBody := "Mango trees"
 	gotBody := w.Body.String()
 	if gotBody != wantBody {
-		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+		t.Errorf("Body got %q, want %q", gotBody, wantBody)
 	}
 }
 
@@ -424,13 +424,13 @@ func TestPreHookWriterResponsesPreventMainHandlerRunning(t *testing.T) {
 	want := 204
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 
 	wantBody := "with biscuits"
 	gotBody := w.Body.String()
 	if gotBody != wantBody {
-		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+		t.Errorf("Body got %q, want %q", gotBody, wantBody)
 	}
 }
 
@@ -452,13 +452,13 @@ func TestPreHookContextResponsesPreventMainHandlerRunning(t *testing.T) {
 	want := 204
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 
 	wantBody := "with biscuits"
 	gotBody := w.Body.String()
 	if gotBody != wantBody {
-		t.Errorf("Body = %q, want %q", gotBody, wantBody)
+		t.Errorf("Body got %q, want %q", gotBody, wantBody)
 	}
 }
 
@@ -533,7 +533,7 @@ func TestPreHookContextResponsesCanSerializeModel(t *testing.T) {
 
 	got := w.Body.String()
 	if got != want {
-		t.Errorf("Body = %s, want %s", got, want)
+		t.Errorf("Body got %s, want %s", got, want)
 	}
 }
 
@@ -552,7 +552,7 @@ func TestGetSimpleTextResponse(t *testing.T) {
 	want := "We're just two lost souls swimming in a fish bowl"
 	got := w.Body.String()
 	if got != want {
-		t.Errorf("Response = %q, want %q", got, want)
+		t.Errorf("Response got %q, want %q", got, want)
 	}
 }
 
@@ -571,7 +571,7 @@ func TestGetResponseStatus(t *testing.T) {
 	want := 404
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -600,7 +600,7 @@ func TestGetEncodedResponse(t *testing.T) {
 	want := fmt.Sprint(model)
 	got := w.Body.String()
 	if got != want {
-		t.Errorf("Response = %q, want %q", got, want)
+		t.Errorf("Response got %q, want %q", got, want)
 	}
 }
 
@@ -629,7 +629,7 @@ func TestResponseCodeWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 	want := 406
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -658,7 +658,7 @@ func TestResponseMessageWhenRequestAcceptHeaderIsUnsupported(t *testing.T) {
 	want := "Unable to encode to requested acceptable formats: \"test/mango\"\n"
 	got := w.Body.String()
 	if got != want {
-		t.Errorf("Error message = %q, want %q", got, want)
+		t.Errorf("Error message got %q, want %q", got, want)
 	}
 }
 
@@ -687,7 +687,7 @@ func TestResponseCodeWhenErrorEncodingPayload(t *testing.T) {
 	want := 500
 	got := w.Code
 	if got != want {
-		t.Errorf("Status = %d, want %d", got, want)
+		t.Errorf("Status got %d, want %d", got, want)
 	}
 }
 
@@ -716,7 +716,94 @@ func TestResponseMessageWhenErrorEncodingPayload(t *testing.T) {
 	want := "Internal Server Error\n"
 	got := w.Body.String()
 	if got != want {
-		t.Errorf("Error message = %q, want %q", got, want)
+		t.Errorf("Error message got %q, want %q", got, want)
+	}
+}
+
+func TestGetStaticResponse(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+
+	rtr.StaticDir("static")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test.html", nil)
+
+	rtr.ServeHTTP(w, req)
+	want := "<html>Test Static</html>\n"
+	got := w.Body.String()
+	if got != want {
+		t.Errorf("Response got %q, want %q", got, want)
+	}
+}
+
+func TestGetStaticResponseStatus(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+
+	rtr.StaticDir("static")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test.html", nil)
+
+	rtr.ServeHTTP(w, req)
+	want := 200
+	got := w.Code
+	if got != want {
+		t.Errorf("Status got %d, want %d", got, want)
+	}
+}
+
+func TestGetStaticRedirectsWhenIndexHtml(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+
+	rtr.StaticDir("static")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/index.html", nil)
+
+	rtr.ServeHTTP(w, req)
+	want := 301
+	got := w.Code
+	if got != want {
+		t.Errorf("Status got %d, want %d", got, want)
+	}
+}
+
+func TestGetStaticRedirectsToRootWhenIndexHtml(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+
+	rtr.StaticDir("static")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/index.html", nil)
+
+	rtr.ServeHTTP(w, req)
+	want := "./"
+	fmt.Println(w.HeaderMap)
+	got := w.HeaderMap.Get("Location")
+	if got != want {
+		t.Errorf("Location got %q, want %q", got, want)
+	}
+
+}
+
+func TestGetStaticRootReturnsIndexHtml(t *testing.T) {
+	rtr := Router{}
+	rtr.routes = newMockRoutes()
+
+	rtr.StaticDir("static")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "", nil)
+
+	rtr.ServeHTTP(w, req)
+	want := "<html>Index Static</html>\n"
+	got := w.Body.String()
+	if got != want {
+		t.Errorf("Response got %q, want %q", got, want)
 	}
 }
 
@@ -729,7 +816,7 @@ func TestNewRouterSetsValidationHandler(t *testing.T) {
 	}
 	got := reflect.TypeOf(r.ValidationHandler).String()
 	if got != want {
-		t.Errorf("ValidationHandler = %q, want %q", got, want)
+		t.Errorf("ValidationHandler got %q, want %q", got, want)
 	}
 }
 
@@ -742,7 +829,7 @@ func TestNewRouterSetsRoutes(t *testing.T) {
 	}
 	got := reflect.TypeOf(r.routes).String()
 	if got != want {
-		t.Errorf("Routes type = %q, want %q", got, want)
+		t.Errorf("Routes type got %q, want %q", got, want)
 	}
 }
 
@@ -756,7 +843,7 @@ func TestNewRouterSetsRoutesValidationHandler(t *testing.T) {
 	tr := r.routes.(*tree)
 	got := reflect.TypeOf(tr.validators).String()
 	if got != want {
-		t.Errorf("Routes type = %q, want %q", got, want)
+		t.Errorf("Routes type got %q, want %q", got, want)
 	}
 }
 
@@ -769,7 +856,7 @@ func TestNewRouterSetsEncoderEngine(t *testing.T) {
 	}
 	got := reflect.TypeOf(r.EncoderEngine).String()
 	if got != want {
-		t.Errorf("EncoderEngine = %q, want %q", got, want)
+		t.Errorf("EncoderEngine got %q, want %q", got, want)
 	}
 }
 
@@ -778,7 +865,7 @@ func TestNewRouterInitialisesEncoderEngineWithDefaultMediaType(t *testing.T) {
 	r := NewRouter()
 	got := r.EncoderEngine.DefaultMediaType()
 	if got != want {
-		t.Errorf("EncoderEngine.DefaultMediaType = %q, want %q", got, want)
+		t.Errorf("EncoderEngine.DefaultMediaType got %q, want %q", got, want)
 	}
 }
 
@@ -801,7 +888,7 @@ func TestRegisterModulesWithEmptyModuleRegistersNoNewRoutes(t *testing.T) {
 	})
 	got := len(r.routes.(*mockRoutes).routes)
 	if got != want {
-		t.Errorf("Route count = %d, want %d", got, want)
+		t.Errorf("Route count got %d, want %d", got, want)
 	}
 }
 
@@ -816,7 +903,7 @@ func TestRegisterModulesWithSingleModuleRegistersRoutes(t *testing.T) {
 	s, _ := r.routes.GetResource("/single")
 	got := len(s.Handlers)
 	if got != want {
-		t.Errorf("Route count = %d, want %d", got, want)
+		t.Errorf("Route count got %d, want %d", got, want)
 	}
 }
 
@@ -834,7 +921,7 @@ func TestRegisterModulesWithMultipleModulesRegistersRoutes(t *testing.T) {
 	got := len(s.Handlers) + len(m.Handlers)
 
 	if got != want {
-		t.Errorf("Route count = %d, want %d", got, want)
+		t.Errorf("Route count got %d, want %d", got, want)
 	}
 }
 
@@ -853,7 +940,7 @@ func TestRegisterModulesDoesNotAffectExisingRegistrations(t *testing.T) {
 	got := len(s.Handlers) + len(m.Handlers)
 
 	if got != want {
-		t.Errorf("Route count = %d, want %d", got, want)
+		t.Errorf("Route count got %d, want %d", got, want)
 	}
 }
 
@@ -915,7 +1002,7 @@ func TestRouterAddValidatorPanicsIfConstraintConflicts(t *testing.T) {
 			want := "conflicting constraint type: int32"
 			got := r
 			if got != want {
-				t.Errorf("Error message = %q, want %q", got, want)
+				t.Errorf("Error message got %q, want %q", got, want)
 			}
 		} else {
 			t.Errorf("The code did not panic")
@@ -936,7 +1023,7 @@ func TestRouterAddValidatorsPanicsIfConstraintConflicts(t *testing.T) {
 			want := "conflicting constraint type: int32"
 			got := r
 			if got != want {
-				t.Errorf("Error message = %q, want %q", got, want)
+				t.Errorf("Error message got %q, want %q", got, want)
 			}
 		} else {
 			t.Errorf("The code did not panic")
@@ -971,7 +1058,7 @@ func TestRouterRequestLoggingWhenNotFound(t *testing.T) {
 	r.RequestLogger = func(l *RequestLog) {
 		got = l.CommonFormat()
 		if got != want {
-			t.Errorf("Log = %q, want %q", got, want)
+			t.Errorf("Log got %q, want %q", got, want)
 		}
 	}
 	r.routes = newMockRoutes()
@@ -995,7 +1082,7 @@ func TestRouterRequestLoggingWithUserHandler(t *testing.T) {
 	r.RequestLogger = func(l *RequestLog) {
 		got = l.CommonFormat()
 		if got != want {
-			t.Errorf("Log = %q, want %q", got, want)
+			t.Errorf("Log got %q, want %q", got, want)
 		}
 	}
 	r.routes = newMockRoutes()
@@ -1022,7 +1109,7 @@ func TestRouterRequestLoggingWithNoContentResponse(t *testing.T) {
 	r.RequestLogger = func(l *RequestLog) {
 		got = l.CommonFormat()
 		if got != want {
-			t.Errorf("Log = %q, want %q", got, want)
+			t.Errorf("Log got %q, want %q", got, want)
 		}
 	}
 	r.routes = newMockRoutes()
@@ -1061,7 +1148,7 @@ func TestRouterRequestLoggingWhenUnRecoveredPanic(t *testing.T) {
 	select {
 	case got := <-ch:
 		if got != want {
-			t.Errorf("Log = %q, want %q", got, want)
+			t.Errorf("Log got %q, want %q", got, want)
 		}
 	case <-time.After(time.Second * 3):
 		t.Errorf("Timed out")
@@ -1079,7 +1166,7 @@ func TestRouterRequestLoggerIsUpdatedWhenAuthenticated(t *testing.T) {
 	r.RequestLogger = func(l *RequestLog) {
 		got = l.UserID
 		if got != want {
-			t.Errorf("UserID = %q, want %q", got, want)
+			t.Errorf("UserID got %q, want %q", got, want)
 		}
 	}
 	r.routes = newMockRoutes()
@@ -1114,7 +1201,7 @@ func TestRouterErrorLoggingMsgHasSummaryAsFirstLineWhenUnRecoveredPanic(t *testi
 		lines := strings.Split(msg, "\n")
 		got := lines[0]
 		if got != want {
-			t.Errorf("Error Summary = %q, want %q", got, want)
+			t.Errorf("Error Summary got %q, want %q", got, want)
 		}
 	case <-time.After(time.Second * 3):
 		t.Errorf("Timed out")
@@ -1151,7 +1238,7 @@ func TestRouterErrorLoggingMsgHasReqDetailAsSecondLineWhenUnRecoveredPanic(t *te
 		lines := strings.Split(msg, "\n")
 		got := lines[1]
 		if got != want {
-			t.Errorf("Error request = %q, want %q", got, want)
+			t.Errorf("Error request got %q, want %q", got, want)
 		}
 	case <-time.After(time.Second * 3):
 		t.Errorf("Timed out")
@@ -1181,7 +1268,7 @@ func TestSetCORSForwardsToTree(t *testing.T) {
 	got := strings.Join(c.Origins, ", ")
 
 	if got != want {
-		t.Errorf("Origins = %q, want %q", got, want)
+		t.Errorf("Origins got %q, want %q", got, want)
 	}
 }
 
@@ -1203,7 +1290,7 @@ func TestSetGlobalCORSForwardsToTree(t *testing.T) {
 	got := strings.Join(gc.Origins, ", ")
 
 	if got != want {
-		t.Errorf("Origins = %q, want %q", got, want)
+		t.Errorf("Origins got %q, want %q", got, want)
 	}
 }
 
@@ -1230,7 +1317,7 @@ func TestAddCORSForwardsToTree(t *testing.T) {
 	got := strings.Join(c.Origins, ", ")
 
 	if got != want {
-		t.Errorf("Origins = %q, want %q", got, want)
+		t.Errorf("Origins got %q, want %q", got, want)
 	}
 }
 
@@ -1290,7 +1377,7 @@ func TestRouterAddModelValidatorAddsToCollection(t *testing.T) {
 		want := "Name must be Mango"
 		got := details["Name"][0].Message
 		if got != want {
-			t.Errorf("Validate message = %q, want %q", got, want)
+			t.Errorf("Validate message got %q, want %q", got, want)
 			return
 		}
 	})
@@ -1326,7 +1413,7 @@ func TestRouterNewValidatorsAddedAreAvailableToModelValidator(t *testing.T) {
 		want := "Must contain the word cheese."
 		got := details["Name"][0].Message
 		if got != want {
-			t.Errorf("Validate message = %q, want %q", got, want)
+			t.Errorf("Validate message got %q, want %q", got, want)
 			return
 		}
 	})

@@ -35,6 +35,7 @@ type Router struct {
 	AutoPopulateOptionsAllow bool
 	modelValidator           ModelValidator
 	CompMinLength            int
+	staticHandler            http.Handler
 }
 
 // AddModelValidator adds a custom model validator to the collection.
@@ -130,6 +131,14 @@ func (r *Router) Options(pattern string, handlerFunc ContextHandlerFunc) {
 	r.routes.AddHandlerFunc(pattern, "OPTIONS", handlerFunc)
 }
 
+// StaticDir sets a root directory for serving static files.
+// Root can be an absolute or relative directory path.
+// As a special case, any request ending in "/index.html" is redirected to the
+// same path, without the final "index.html".
+func (r *Router) StaticDir(root string) {
+	r.staticHandler = http.FileServer(http.Dir(root))
+}
+
 // ServeHTTP dispatches the request to the handler whose pattern
 // matches the request URL.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -165,6 +174,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	resource, ok := r.routes.GetResource(req.URL.Path)
 	if !ok {
+		// try static files
+		if r.staticHandler != nil {
+			r.staticHandler.ServeHTTP(resp, req)
+			return
+		}
+
 		http.NotFound(resp, req)
 		return
 	}
