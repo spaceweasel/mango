@@ -202,3 +202,69 @@ func TestNewRequestLogStartUsingNowFunc(t *testing.T) {
 		t.Errorf("Start = %v, want %v", got, want)
 	}
 }
+
+func TestNewRequestLogSetsMethod(t *testing.T) {
+	want := "GET"
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	log := NewRequestLog(req)
+
+	got := log.Method
+
+	if got != want {
+		t.Errorf("Method = %q, want %q", got, want)
+	}
+}
+
+func TestNewRequestLogSetsURI(t *testing.T) {
+	want := "/spaceweasel/mango/stone.png"
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	log := NewRequestLog(req)
+
+	got := log.URI
+
+	if got != want {
+		t.Errorf("URI = %q, want %q", got, want)
+	}
+}
+
+func TestNewRequestLogSetsProtocol(t *testing.T) {
+	want := "HTTP/1.1"
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	log := NewRequestLog(req)
+
+	got := log.Protocol
+
+	if got != want {
+		t.Errorf("Protocol = %q, want %q", got, want)
+	}
+}
+
+func TestNewRequestLogSetsHeader(t *testing.T) {
+	want := "Onions"
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	req.Header.Set("X-SomeHeader", "Onions")
+	log := NewRequestLog(req)
+
+	got := log.Header("X-SomeHeader")
+
+	if got != want {
+		t.Errorf("Header = %q, want %q", got, want)
+	}
+}
+
+func TestRequestLogHeaderReturnsEmptyStringWhenMissingHeader(t *testing.T) {
+	want := ""
+
+	req, _ := http.NewRequest("GET", "https://github.com/spaceweasel/mango/stone.png", nil)
+	log := NewRequestLog(req)
+
+	got := log.Header("X-SomeMissingHeader")
+
+	if got != want {
+		t.Errorf("Header = %q, want %q", got, want)
+	}
+}

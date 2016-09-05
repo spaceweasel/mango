@@ -216,9 +216,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 	}
+
+	// update request log with any post prehook changes
 	if c.Identity != nil {
 		reqLog.UserID = c.Identity.UserID()
 	}
+	reqLog.Context = c.X
 
 	// TODO: record name of handler function in reqLog
 	// handlerName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()

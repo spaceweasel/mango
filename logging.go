@@ -22,6 +22,10 @@ func NewRequestLog(req *http.Request) *RequestLog {
 		Referer:       req.Referer(),
 		UserAgent:     req.UserAgent(),
 		UserID:        "-",
+		Method:        req.Method,
+		URI:           req.URL.RequestURI(),
+		Protocol:      req.Proto,
+		header:        req.Header,
 	}
 	return &log
 }
@@ -33,35 +37,55 @@ func NewRequestLog(req *http.Request) *RequestLog {
 type RequestLog struct {
 	// Start is the time the request was received
 	Start time.Time
+
 	// Finish is the time the request was completed
+
 	Finish time.Time
 	// Host is the host on which the requested resource resides.
 	// Format is "host:port" although port is omitted for standard
 	// ports.
 	// Example: www.somedomain.com
 	Host string
+
 	// AccessRequest is a concatenation of request information, in the
 	// format: METHOD Path&Query protocol
 	//
 	// e.g. GET /somepath/more/thing.gif HTTP/1.1
 	AccessRequest string
+
 	// Status is the response status code
 	Status int
+
 	// BytesOut is the number of bytes returned by the response
 	BytesOut int
+
 	// Duration is the time taken to process the request.
 	Duration time.Duration
+
 	// UserAgent is the client's user agent string (if provided)
 	UserAgent string
+
 	// RemoteAddr is the network address that sent the request.
 	// Format is "IP:port"
 	RemoteAddr string
+
 	// Referer is the referring URL (if provided).
 	// Referer is misspelled deliberately to match HTTP specification.
 	Referer string
+
 	// UserID returns the UserID of the authenticated user making the
 	// request. Returns "-" if the request user has not been authenticated.
 	UserID string
+
+	Method string
+
+	URI string
+
+	Protocol string
+
+	Context interface{}
+
+	header http.Header
 }
 
 // CommonFormat returns request data as a string in W3C Common Log Format.
@@ -80,6 +104,12 @@ func (r *RequestLog) CombinedFormat() string {
 	s := fmt.Sprintf("%s \"%s\" \"%s\"",
 		r.CommonFormat(), r.Referer, r.UserAgent)
 	return s
+}
+
+// Header returns the request header value for the specified key.
+// Returns an empty string if no matching header is found.
+func (r *RequestLog) Header(key string) string {
+	return r.header.Get(key)
 }
 
 func (r *RequestLog) stop() {

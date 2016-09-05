@@ -782,7 +782,7 @@ func TestGetStaticRedirectsToRootWhenIndexHtml(t *testing.T) {
 
 	rtr.ServeHTTP(w, req)
 	want := "./"
-	fmt.Println(w.HeaderMap)
+	//fmt.Println(w.HeaderMap)
 	got := w.HeaderMap.Get("Location")
 	if got != want {
 		t.Errorf("Location got %q, want %q", got, want)
@@ -1157,17 +1157,15 @@ func TestRouterRequestLoggingWhenUnRecoveredPanic(t *testing.T) {
 
 func TestRouterRequestLoggerIsUpdatedWhenAuthenticated(t *testing.T) {
 	want := "Mungo"
+	ch := make(chan string)
 
 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
 	req.RemoteAddr = "127.0.0.1"
 	w := httptest.NewRecorder()
-	got := ""
+
 	r := Router{}
 	r.RequestLogger = func(l *RequestLog) {
-		got = l.UserID
-		if got != want {
-			t.Errorf("UserID got %q, want %q", got, want)
-		}
+		ch <- l.UserID
 	}
 	r.routes = newMockRoutes()
 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
@@ -1177,6 +1175,37 @@ func TestRouterRequestLoggerIsUpdatedWhenAuthenticated(t *testing.T) {
 		c.Identity = BasicIdentity{Username: "Mungo"}
 	})
 	r.ServeHTTP(w, req)
+	got := <-ch
+	if got != want {
+		t.Errorf("UserID got %q, want %q", got, want)
+	}
+}
+
+func TestRouterRequestLoggerIsUpdatedWithContextX(t *testing.T) {
+	want := 42
+	ch := make(chan interface{})
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		ch <- l.Context
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		//c.RespondWith("A mango in the hand")
+	})
+	r.AddPreHook(func(c *Context) {
+		c.X = 42
+	})
+	r.ServeHTTP(w, req)
+	x := <-ch
+	got := x
+	if got != want {
+		t.Errorf("Context X got %v, want %v", got, want)
+	}
 }
 
 func TestRouterErrorLoggingMsgHasSummaryAsFirstLineWhenUnRecoveredPanic(t *testing.T) {
