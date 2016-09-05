@@ -12,9 +12,9 @@ func testFunc3(c *Context) {}
 
 func TestAddHandlerFuncAddsToTreeRoot(t *testing.T) {
 	want := 1
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc)
-	got := len(tree.Root().children)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc)
+	got := len(testTree.Root().children)
 	if got != want {
 		t.Errorf("Node count = %d, want %d", got, want)
 	}
@@ -22,9 +22,9 @@ func TestAddHandlerFuncAddsToTreeRoot(t *testing.T) {
 
 func TestAddGetResourceetsNodeLabel(t *testing.T) {
 	want := "/Sleep"
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc)
-	got := tree.Root().children[0].label
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc)
+	got := testTree.Root().children[0].label
 	if got != want {
 		t.Errorf("Label = %q, want %q", got, want)
 	}
@@ -32,10 +32,10 @@ func TestAddGetResourceetsNodeLabel(t *testing.T) {
 
 func TestAddingTwoHandlersWithCompletelyDifferentRoutesAddsTwoNodesToTreeRoot(t *testing.T) {
 	want := 2
-	tree := tree{}
-	tree.AddHandlerFunc("Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("Fish", "GET", testFunc)
-	got := len(tree.Root().children)
+	testTree := tree{}
+	testTree.AddHandlerFunc("Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("Fish", "GET", testFunc)
+	got := len(testTree.Root().children)
 	if got != want {
 		t.Errorf("Node count = %d, want %d", got, want)
 	}
@@ -43,10 +43,10 @@ func TestAddingTwoHandlersWithCompletelyDifferentRoutesAddsTwoNodesToTreeRoot(t 
 
 func TestAddingHandlerWithRouteStartingWithExistingRouteAddsChildToExistingRoute(t *testing.T) {
 	want := 1
-	tree := tree{}
-	tree.AddHandlerFunc("Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("Sleepers", "GET", testFunc)
-	got := len(tree.Root().children[0].children)
+	testTree := tree{}
+	testTree.AddHandlerFunc("Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("Sleepers", "GET", testFunc)
+	got := len(testTree.Root().children[0].children)
 	if got != want {
 		t.Errorf("Node count = %d, want %d", got, want)
 	}
@@ -54,10 +54,10 @@ func TestAddingHandlerWithRouteStartingWithExistingRouteAddsChildToExistingRoute
 
 func TestAddingHandlerWithRouteStartingWithExistingRouteSplitsNodeWithCorrectLabel(t *testing.T) {
 	want := "Sleep"
-	tree := tree{}
-	tree.AddHandlerFunc("Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("Sleepers", "GET", testFunc)
-	got := tree.Root().children[0].label
+	testTree := tree{}
+	testTree.AddHandlerFunc("Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("Sleepers", "GET", testFunc)
+	got := testTree.Root().children[0].label
 	if got != want {
 		t.Errorf("Label = %q, want %q", got, want)
 	}
@@ -65,10 +65,10 @@ func TestAddingHandlerWithRouteStartingWithExistingRouteSplitsNodeWithCorrectLab
 
 func TestAddingHandlerWithRouteStartingWithExistingRouteAddsChildWithCorrectLabel(t *testing.T) {
 	want := "ers"
-	tree := tree{}
-	tree.AddHandlerFunc("Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("Sleepers", "GET", testFunc)
-	got := tree.Root().children[0].children[0].label
+	testTree := tree{}
+	testTree.AddHandlerFunc("Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("Sleepers", "GET", testFunc)
+	got := testTree.Root().children[0].children[0].label
 	if got != want {
 		t.Errorf("Label = %q, want %q", got, want)
 	}
@@ -76,10 +76,10 @@ func TestAddingHandlerWithRouteStartingWithExistingRouteAddsChildWithCorrectLabe
 
 func TestAddingHandlerWithRouteSubstringOfExistingRouteAddsChildWithCorrectLabel(t *testing.T) {
 	want := "ers"
-	tree := tree{}
-	tree.AddHandlerFunc("Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("Sleep", "GET", testFunc)
-	got := tree.Root().children[0].children[0].label
+	testTree := tree{}
+	testTree.AddHandlerFunc("Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("Sleep", "GET", testFunc)
+	got := testTree.Root().children[0].children[0].label
 	if got != want {
 		t.Errorf("Label = %q, want %q", got, want)
 	}
@@ -93,13 +93,13 @@ func TestAddingMultipleHandlersWithDifferentRoutesAddsMultipleNodes(t *testing.T
 	//             - y
 	//
 	want := 6
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepy", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleeping", "GET", testFunc)
-	tree.AddHandlerFunc("/Sugar", "GET", testFunc)
-	got := tree.GetStats().totalNodes
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepy", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleeping", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sugar", "GET", testFunc)
+	got := testTree.GetStats().totalNodes
 	if got != want {
 		t.Errorf("Node count = %d, want %d", got, want)
 	}
@@ -107,9 +107,9 @@ func TestAddingMultipleHandlersWithDifferentRoutesAddsMultipleNodes(t *testing.T
 
 func TestAddingHandlerStoresHandlerInNode(t *testing.T) {
 	want := "testFunc"
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	kvp := tree.Root().children[0].handlers
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	kvp := testTree.Root().children[0].handlers
 	f := kvp["GET"]
 	name := extractFnName(f)
 	got := name
@@ -120,10 +120,10 @@ func TestAddingHandlerStoresHandlerInNode(t *testing.T) {
 
 func TestAddingHandlerToSameRouteDoesNotAddNode(t *testing.T) {
 	want := 1
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers", "POST", testFunc2)
-	got := tree.GetStats().totalNodes
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers", "POST", testFunc2)
+	got := testTree.GetStats().totalNodes
 	if got != want {
 		t.Errorf("Node count = %d, want %d", got, want)
 	}
@@ -131,10 +131,10 @@ func TestAddingHandlerToSameRouteDoesNotAddNode(t *testing.T) {
 
 func TestAddingHandlerToSameRouteUsesExisitingNode(t *testing.T) {
 	want := "testFunc2"
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers", "POST", testFunc2)
-	kvp := tree.Root().children[0].handlers
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers", "POST", testFunc2)
+	kvp := testTree.Root().children[0].handlers
 	f := kvp["POST"]
 	name := extractFnName(f)
 	got := name
@@ -150,9 +150,9 @@ func TestAddingHandlerForDuplicateRouteMethodPanics(t *testing.T) {
 		}
 	}()
 
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc2)
 }
 
 func TestAddingHandlerForDuplicateRouteMethodPanicsWithCorrectMessage(t *testing.T) {
@@ -166,17 +166,17 @@ func TestAddingHandlerForDuplicateRouteMethodPanicsWithCorrectMessage(t *testing
 		}
 	}()
 
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc2)
 }
 
 func TestRetrievingHandlersForNonexistentPathReturnsFalse(t *testing.T) {
 	want := false
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc2)
-	_, got := tree.GetResource("/Sugar")
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc2)
+	_, got := testTree.GetResource("/Sugar")
 	if got != want {
 		t.Errorf("Result = %t, want %t", got, want)
 	}
@@ -184,10 +184,10 @@ func TestRetrievingHandlersForNonexistentPathReturnsFalse(t *testing.T) {
 
 func TestRetrievingHandlersForExistentPathReturnsTrue(t *testing.T) {
 	want := true
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc2)
-	_, got := tree.GetResource("/Sleep")
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc2)
+	_, got := testTree.GetResource("/Sleep")
 	if got != want {
 		t.Errorf("Result = %t, want %t", got, want)
 	}
@@ -195,10 +195,10 @@ func TestRetrievingHandlersForExistentPathReturnsTrue(t *testing.T) {
 
 func TestRetrievingHandlersForMatchingPathReturnsNonEmptyMap(t *testing.T) {
 	want := 1
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc2)
-	resource, _ := tree.GetResource("/Sleep")
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc2)
+	resource, _ := testTree.GetResource("/Sleep")
 	got := len(resource.Handlers)
 	if got != want {
 		t.Errorf("Handlers count = %d, want %d", got, want)
@@ -207,11 +207,11 @@ func TestRetrievingHandlersForMatchingPathReturnsNonEmptyMap(t *testing.T) {
 
 func TestRetrievingHandlersForMatchingPathReturnsMapWithMulipleHandlers(t *testing.T) {
 	want := 2
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "POST", testFunc2)
-	resource, _ := tree.GetResource("/Sleep")
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "POST", testFunc2)
+	resource, _ := testTree.GetResource("/Sleep")
 	got := len(resource.Handlers)
 	if got != want {
 		t.Errorf("Handlers count = %d, want %d", got, want)
@@ -220,11 +220,11 @@ func TestRetrievingHandlersForMatchingPathReturnsMapWithMulipleHandlers(t *testi
 
 func TestRetrievingCorrectHandlerForMethod(t *testing.T) {
 	want := "testFunc2"
-	tree := tree{}
-	tree.AddHandlerFunc("/Sleepers", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleep", "POST", testFunc2)
-	resource, _ := tree.GetResource("/Sleep")
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Sleepers", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleep", "POST", testFunc2)
+	resource, _ := testTree.GetResource("/Sleep")
 	h := resource.Handlers["POST"]
 	name := extractFnName(h)
 	got := name
@@ -236,10 +236,10 @@ func TestRetrievingCorrectHandlerForMethod(t *testing.T) {
 func TestRetrievingSingleRouteParameter(t *testing.T) {
 	want := "45"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
-	resource, _ := tree.GetResource("/Sleepers/45")
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
+	resource, _ := testTree.GetResource("/Sleepers/45")
 	p := resource.RouteParams["sleeperID"]
 	got := p
 	if got != want {
@@ -250,10 +250,10 @@ func TestRetrievingSingleRouteParameter(t *testing.T) {
 func TestRouteIsIgnoredWhenTerminatingParameterIsInvalid(t *testing.T) {
 	want := false
 	validator := mockValidationHandler{valid: false}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
-	_, ok := tree.GetResource("/Sleepers/45")
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
+	_, ok := testTree.GetResource("/Sleepers/45")
 	got := ok
 	if got != want {
 		t.Errorf("Value = %t, want %t", got, want)
@@ -263,10 +263,10 @@ func TestRouteIsIgnoredWhenTerminatingParameterIsInvalid(t *testing.T) {
 func TestRouteIsIgnoredWhenMidplacedParameterIsInvalid(t *testing.T) {
 	want := false
 	validator := mockValidationHandler{valid: false}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}/books", "GET", testFunc)
-	_, ok := tree.GetResource("/Sleepers/45/books")
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}/books", "GET", testFunc)
+	_, ok := testTree.GetResource("/Sleepers/45/books")
 	got := ok
 	if got != want {
 		t.Errorf("Value = %t, want %t", got, want)
@@ -276,10 +276,10 @@ func TestRouteIsIgnoredWhenMidplacedParameterIsInvalid(t *testing.T) {
 func TestRetrievingMultipleRouteParameters(t *testing.T) {
 	want := "45greenant"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}/{insect}", "GET", testFunc)
-	resource, _ := tree.GetResource("/Sleepers/45/eyecolor/green/ant")
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}/{insect}", "GET", testFunc)
+	resource, _ := testTree.GetResource("/Sleepers/45/eyecolor/green/ant")
 	p := resource.RouteParams["sleeperID"]
 	p += resource.RouteParams["color"]
 	p += resource.RouteParams["insect"]
@@ -293,13 +293,13 @@ func TestRetrievingMultipleRouteParameters(t *testing.T) {
 func TestRetrievingMultipleRouteParametersWhenManyRoutes(t *testing.T) {
 	want := "45greenant"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
-	tree.AddHandlerFunc("/Cheese/{sleeperID}", "GET", testFunc)
-	tree.AddHandlerFunc("/{sleeperID}/eggs", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}", "GET", testFunc2)
-	tree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}/{insect}", "GET", testFunc3)
-	resource, _ := tree.GetResource("/Sleepers/45/eyecolor/green/ant")
+	testTree := tree{validators: validator}
+	testTree.AddHandlerFunc("/Cheese/{sleeperID}", "GET", testFunc)
+	testTree.AddHandlerFunc("/{sleeperID}/eggs", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}", "GET", testFunc)
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}", "GET", testFunc2)
+	testTree.AddHandlerFunc("/Sleepers/{sleeperID}/eyecolor/{color}/{insect}", "GET", testFunc3)
+	resource, _ := testTree.GetResource("/Sleepers/45/eyecolor/green/ant")
 	p := resource.RouteParams["sleeperID"]
 	p += resource.RouteParams["color"]
 	p += resource.RouteParams["insect"]
@@ -313,10 +313,10 @@ func TestRetrievingMultipleRouteParametersWhenManyRoutes(t *testing.T) {
 func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedLast(t *testing.T) {
 	want := "testFunc"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
-	tree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
-	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
-	resource, _ := tree.GetResource("/eyecolor/green")
+	testTree := tree{validators: validator}
+	testTree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
+	testTree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
+	resource, _ := testTree.GetResource("/eyecolor/green")
 
 	h := resource.Handlers["GET"]
 	name := extractFnName(h)
@@ -335,11 +335,11 @@ func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedLast(t *testing.T) {
 func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedFirst(t *testing.T) {
 	want := "testFunc"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
-	resource, _ := tree.GetResource("/eyecolor/green")
+	testTree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/green", "GET", testFunc)
+	resource, _ := testTree.GetResource("/eyecolor/green")
 
 	h := resource.Handlers["GET"]
 	name := extractFnName(h)
@@ -358,12 +358,12 @@ func TestParametizedNodeIsLastToMatchIfParametizedRouteAddedFirst(t *testing.T) 
 func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedFirst(t *testing.T) {
 	want := "testFunc"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/{color:alpha}", "GET", testFunc)
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
-	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
-	resource, _ := tree.GetResource("/eyecolor/green")
+	testTree.AddHandlerFunc("/eyecolor/{color:alpha}", "GET", testFunc)
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
+	testTree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
+	resource, _ := testTree.GetResource("/eyecolor/green")
 
 	h := resource.Handlers["GET"]
 	name := extractFnName(h)
@@ -382,12 +382,12 @@ func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedFirst(t *testing.
 func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedLast(t *testing.T) {
 	want := "testFunc"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
-	tree.AddHandlerFunc("/eyecolor/{color:alpha}", "GET", testFunc)
-	resource, _ := tree.GetResource("/eyecolor/green")
+	testTree.AddHandlerFunc("/eyecolor/{color}", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc3)
+	testTree.AddHandlerFunc("/eyecolor/{color:alpha}", "GET", testFunc)
+	resource, _ := testTree.GetResource("/eyecolor/green")
 
 	h := resource.Handlers["GET"]
 	name := extractFnName(h)
@@ -406,11 +406,11 @@ func TestConstrainedParametizedNodeMatchesNonconstrainedIfAddedLast(t *testing.T
 func TestMatchingPathElementShorterThanLabelReturnsFalseIfNoOtherMatches(t *testing.T) {
 	want := false
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/greenish", "GET", testFunc3)
-	_, got := tree.GetResource("/eyecolor/green")
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/greenish", "GET", testFunc3)
+	_, got := testTree.GetResource("/eyecolor/green")
 	if got != want {
 		t.Errorf("Result = %t, want %t", got, want)
 	}
@@ -423,8 +423,8 @@ func TestAddHandlerFuncPanicsWhenMismatchingParameterBraces(t *testing.T) {
 		}
 	}()
 
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/{color", "GET", testFunc)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/{color", "GET", testFunc)
 }
 
 func TestAddHandlerFuncPanicsWithCorrectMessageWhenMismatchingParameterBraces(t *testing.T) {
@@ -438,23 +438,23 @@ func TestAddHandlerFuncPanicsWithCorrectMessageWhenMismatchingParameterBraces(t 
 		}
 	}()
 
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/{color", "GET", testFunc)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/{color", "GET", testFunc)
 }
 
 func TestCORSConfigAppliedToResource(t *testing.T) {
 	want := "http://greencheese.com"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
 	config := CORSConfig{
 		Origins: []string{"http://greencheese.com"},
 	}
-	tree.SetCORS("/eyecolor/blue", config)
+	testTree.SetCORS("/eyecolor/blue", config)
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v", config)
 		return
@@ -468,16 +468,16 @@ func TestCORSConfigAppliedToResource(t *testing.T) {
 func TestTreeGetResourceUsesGlobalCORSConfigWhenResourceConfigIsNil(t *testing.T) {
 	want := "http://greencheese.com"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
 	config := CORSConfig{
 		Origins: []string{"http://greencheese.com"},
 	}
-	tree.SetGlobalCORS(config)
+	testTree.SetGlobalCORS(config)
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v", config)
 		return
@@ -491,20 +491,20 @@ func TestTreeGetResourceUsesGlobalCORSConfigWhenResourceConfigIsNil(t *testing.T
 func TestTreeGetResourceDoesNotUseGlobalCORSConfigWhenResourceConfigIsNotNil(t *testing.T) {
 	want := "http://bluecheese.com"
 	validator := mockValidationHandler{valid: true}
-	tree := tree{validators: validator}
+	testTree := tree{validators: validator}
 
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
-	tree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree.AddHandlerFunc("/eyecolor/blue", "POST", testFunc3)
 	rConfig := CORSConfig{
 		Origins: []string{"http://bluecheese.com"},
 	}
-	tree.SetCORS("/eyecolor/blue", rConfig)
+	testTree.SetCORS("/eyecolor/blue", rConfig)
 	gConfig := CORSConfig{
 		Origins: []string{"http://greencheese.com"},
 	}
-	tree.SetGlobalCORS(gConfig)
+	testTree.SetGlobalCORS(gConfig)
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v", rConfig)
 		return
@@ -528,8 +528,8 @@ func TestTreeAddCORSPanicsWhenNoGlobalConfig(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	rConfig := CORSConfig{
 		Origins:        []string{"http://bluecheese.com"},
 		Methods:        []string{"POST", "PATCH"},
@@ -538,12 +538,12 @@ func TestTreeAddCORSPanicsWhenNoGlobalConfig(t *testing.T) {
 		Credentials:    true,
 		MaxAge:         45,
 	}
-	tree.AddCORS("/eyecolor/blue", rConfig)
+	testTree.AddCORS("/eyecolor/blue", rConfig)
 }
 
 func TestTreeSetCORSWhenNoGlobalConfig(t *testing.T) {
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 	rConfig := CORSConfig{
 		Origins:        []string{"http://bluecheese.com"},
 		Methods:        []string{"POST", "PATCH"},
@@ -552,7 +552,7 @@ func TestTreeSetCORSWhenNoGlobalConfig(t *testing.T) {
 		Credentials:    true,
 		MaxAge:         45,
 	}
-	tree.SetCORS("/eyecolor/blue", rConfig)
+	testTree.SetCORS("/eyecolor/blue", rConfig)
 
 	tests := []struct {
 		want string
@@ -603,7 +603,7 @@ func TestTreeSetCORSWhenNoGlobalConfig(t *testing.T) {
 		},
 	}
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v\n", rConfig)
 		return
@@ -617,8 +617,8 @@ func TestTreeSetCORSWhenNoGlobalConfig(t *testing.T) {
 }
 
 func TestTreeAddCORSIncludesDataFromGlobalConfig(t *testing.T) {
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 
 	gConfig := CORSConfig{
 		Origins:        []string{"http://greencheese.com"},
@@ -626,7 +626,7 @@ func TestTreeAddCORSIncludesDataFromGlobalConfig(t *testing.T) {
 		Headers:        []string{"X-Custard", "X-Fish"},
 		ExposedHeaders: []string{"X-Onions"},
 	}
-	tree.SetGlobalCORS(gConfig)
+	testTree.SetGlobalCORS(gConfig)
 
 	rConfig := CORSConfig{
 		Origins:        []string{"http://bluecheese.com"},
@@ -636,7 +636,7 @@ func TestTreeAddCORSIncludesDataFromGlobalConfig(t *testing.T) {
 		Credentials:    true,
 		MaxAge:         45,
 	}
-	tree.AddCORS("/eyecolor/blue", rConfig)
+	testTree.AddCORS("/eyecolor/blue", rConfig)
 
 	tests := []struct {
 		want string
@@ -687,7 +687,7 @@ func TestTreeAddCORSIncludesDataFromGlobalConfig(t *testing.T) {
 		},
 	}
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v\n", rConfig)
 		return
@@ -701,8 +701,8 @@ func TestTreeAddCORSIncludesDataFromGlobalConfig(t *testing.T) {
 }
 
 func TestTreeAddCORSRemovesDuplicates(t *testing.T) {
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 
 	gConfig := CORSConfig{
 		Origins:        []string{"http://greencheese.com", "http://bluecheese.com"},
@@ -710,7 +710,7 @@ func TestTreeAddCORSRemovesDuplicates(t *testing.T) {
 		Headers:        []string{"X-Custard", "X-Fish", "X-Mangoes"},
 		ExposedHeaders: []string{"X-Onions", "X-Biscuits"},
 	}
-	tree.SetGlobalCORS(gConfig)
+	testTree.SetGlobalCORS(gConfig)
 
 	rConfig := CORSConfig{
 		Origins:        []string{"http://bluecheese.com"},
@@ -720,7 +720,7 @@ func TestTreeAddCORSRemovesDuplicates(t *testing.T) {
 		Credentials:    true,
 		MaxAge:         45,
 	}
-	tree.AddCORS("/eyecolor/blue", rConfig)
+	testTree.AddCORS("/eyecolor/blue", rConfig)
 
 	tests := []struct {
 		want string
@@ -771,7 +771,7 @@ func TestTreeAddCORSRemovesDuplicates(t *testing.T) {
 		},
 	}
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v\n", rConfig)
 		return
@@ -785,20 +785,20 @@ func TestTreeAddCORSRemovesDuplicates(t *testing.T) {
 }
 
 func TestTreeAddCORSCredentialsAndMaxAgeOverrideGlobalSetting(t *testing.T) {
-	tree := tree{}
-	tree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
+	testTree := tree{}
+	testTree.AddHandlerFunc("/eyecolor/blue", "GET", testFunc2)
 
 	gConfig := CORSConfig{
 		Credentials: false,
 		MaxAge:      32,
 	}
-	tree.SetGlobalCORS(gConfig)
+	testTree.SetGlobalCORS(gConfig)
 
 	rConfig := CORSConfig{
 		Credentials: true,
 		MaxAge:      45,
 	}
-	tree.AddCORS("/eyecolor/blue", rConfig)
+	testTree.AddCORS("/eyecolor/blue", rConfig)
 
 	tests := []struct {
 		want string
@@ -821,7 +821,7 @@ func TestTreeAddCORSCredentialsAndMaxAgeOverrideGlobalSetting(t *testing.T) {
 		},
 	}
 
-	res, _ := tree.GetResource("/eyecolor/blue")
+	res, _ := testTree.GetResource("/eyecolor/blue")
 	if res.CORSConfig == nil {
 		t.Errorf("CORSConfig = <nil>, want %v\n", rConfig)
 		return
@@ -837,9 +837,9 @@ func TestTreeAddCORSCredentialsAndMaxAgeOverrideGlobalSetting(t *testing.T) {
 func TestTreeStructureWithSingleStaticRoute(t *testing.T) {
 	want := `>Label: "/Cheese/sleeper"	Handlers [GET: testFunc]	 ParamNames []
 `
-	tree := tree{}
-	tree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
-	got := tree.Structure()
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
+	got := testTree.Structure()
 	if got != want {
 		t.Errorf("Value = %q, want %q", got, want)
 	}
@@ -850,10 +850,10 @@ func TestTreeStructureWithTwoStaticRoutesWithDifferentInitialSegment(t *testing.
 	>Label: "Onions/spring"	Handlers [GET: testFunc2]	 ParamNames []` + `
 	>Label: "Cheese/sleeper"	Handlers [GET: testFunc]	 ParamNames []
 `
-	tree := tree{}
-	tree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
-	tree.AddHandlerFunc("/Onions/spring", "GET", testFunc2)
-	got := tree.Structure()
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Cheese/sleeper", "GET", testFunc)
+	testTree.AddHandlerFunc("/Onions/spring", "GET", testFunc2)
+	got := testTree.Structure()
 	if got != want {
 		t.Errorf("Value = %q, want %q", got, want)
 	}
@@ -869,10 +869,10 @@ func TestTreeStructureWithTwoStaticRoutesWithParametizedSegments(t *testing.T) {
 			>Label: "/sleeper/"		` + `
 				>Param: ""	Handlers [GET: testFunc]	 ParamNames [eyeball,desire,]
 `
-	tree := tree{}
-	tree.AddHandlerFunc("/Cheese/{desire}/sleeper/{eyeball}", "GET", testFunc)
-	tree.AddHandlerFunc("/Onions/{season}/spring", "GET", testFunc2)
-	got := tree.Structure()
+	testTree := tree{}
+	testTree.AddHandlerFunc("/Cheese/{desire}/sleeper/{eyeball}", "GET", testFunc)
+	testTree.AddHandlerFunc("/Onions/{season}/spring", "GET", testFunc2)
+	got := testTree.Structure()
 	if got != want {
 		t.Errorf("Value = %q, want %q", got, want)
 	}
