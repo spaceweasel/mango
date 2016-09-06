@@ -1208,6 +1208,37 @@ func TestRouterRequestLoggerIsUpdatedWithContextX(t *testing.T) {
 	}
 }
 
+func TestRouterRequestLoggerIsUpdatedWithContextIdentity(t *testing.T) {
+	want := "Jeff"
+	ch := make(chan Identity)
+
+	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
+	req.RemoteAddr = "127.0.0.1"
+	w := httptest.NewRecorder()
+
+	r := Router{}
+	r.RequestLogger = func(l *RequestLog) {
+		ch <- l.Identity
+	}
+	r.routes = newMockRoutes()
+	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
+		//c.RespondWith("A mango in the hand")
+	})
+	r.AddPreHook(func(c *Context) {
+		c.Identity = BasicIdentity{Username: "Jeff"}
+	})
+	r.ServeHTTP(w, req)
+	identity := <-ch
+	if identity == nil {
+		t.Errorf("Identity is nil")
+		return
+	}
+	got := identity.UserID()
+	if got != want {
+		t.Errorf("UserID got %q, want %q", got, want)
+	}
+}
+
 func TestRouterErrorLoggingMsgHasSummaryAsFirstLineWhenUnRecoveredPanic(t *testing.T) {
 	want := "what no mangoes!"
 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)

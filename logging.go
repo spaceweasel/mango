@@ -77,12 +77,21 @@ type RequestLog struct {
 	// request. Returns "-" if the request user has not been authenticated.
 	UserID string
 
+	// Identity returns the Identity of the authenticated user.
+	// Identity is a property of the mango context and must be set in the
+	// consuming application (e.g. using a custom authenticaion hook).
+	Identity Identity
+
+	// Method is the HTTP request method.
 	Method string
 
+	// URI is the path and query of the request URI.
 	URI string
 
+	// Protocol is the HTTP Protocol used for the request.
 	Protocol string
 
+	// Context returns the user defined X property of the mango context.
 	Context interface{}
 
 	header http.Header

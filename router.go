@@ -219,6 +219,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// update request log with any post prehook changes
 	if c.Identity != nil {
+		reqLog.Identity = c.Identity
 		reqLog.UserID = c.Identity.UserID()
 	}
 	reqLog.Context = c.X
