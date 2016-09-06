@@ -1191,7 +1191,7 @@ func TestRouterRequestLoggerIsUpdatedWithContextX(t *testing.T) {
 
 	r := Router{}
 	r.RequestLogger = func(l *RequestLog) {
-		ch <- l.Context
+		ch <- l.Context()
 	}
 	r.routes = newMockRoutes()
 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {
@@ -1218,7 +1218,7 @@ func TestRouterRequestLoggerIsUpdatedWithContextIdentity(t *testing.T) {
 
 	r := Router{}
 	r.RequestLogger = func(l *RequestLog) {
-		ch <- l.Identity
+		ch <- l.Identity()
 	}
 	r.routes = newMockRoutes()
 	r.routes.AddHandlerFunc("/mango", "GET", func(c *Context) {

@@ -35,6 +35,10 @@ func NewRequestLog(req *http.Request) *RequestLog {
 // request object, this struct holds details about the duration,
 // status and amount of data returned.
 type RequestLog struct {
+	identity Identity
+	context  interface{}
+	header   http.Header
+
 	// Start is the time the request was received
 	Start time.Time
 
@@ -77,11 +81,6 @@ type RequestLog struct {
 	// request. Returns "-" if the request user has not been authenticated.
 	UserID string
 
-	// Identity returns the Identity of the authenticated user.
-	// Identity is a property of the mango context and must be set in the
-	// consuming application (e.g. using a custom authenticaion hook).
-	Identity Identity
-
 	// Method is the HTTP request method.
 	Method string
 
@@ -90,11 +89,6 @@ type RequestLog struct {
 
 	// Protocol is the HTTP Protocol used for the request.
 	Protocol string
-
-	// Context returns the user defined X property of the mango context.
-	Context interface{}
-
-	header http.Header
 }
 
 // CommonFormat returns request data as a string in W3C Common Log Format.
@@ -113,6 +107,18 @@ func (r *RequestLog) CombinedFormat() string {
 	s := fmt.Sprintf("%s \"%s\" \"%s\"",
 		r.CommonFormat(), r.Referer, r.UserAgent)
 	return s
+}
+
+// Context returns the user defined X property of the mango context.
+func (r *RequestLog) Context() interface{} {
+	return r.context
+}
+
+// Identity returns the identity of the authenticated user.
+// Identity is a property of the mango context and must be set in the
+// consuming application (e.g. using a custom authenticaion hook).
+func (r *RequestLog) Identity() Identity {
+	return r.identity
 }
 
 // Header returns the request header value for the specified key.
