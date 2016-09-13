@@ -570,8 +570,75 @@ func TestHandleCORSFailsPreflightIfRequestMethodNotInResourceMethodsEvenWhenInCO
 	}
 }
 
-func TestHandleCORSReturnsFalseWhenPreflightFails(t *testing.T) {
+func TestHandleCORSReturnsFalseWhenNoOrigin(t *testing.T) {
 	want := false
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	got := handleCORS(req, w, &res)
+
+	if got != want {
+		t.Errorf("Preflight = %t, want %t", got, want)
+	}
+}
+
+func TestHandleCORSReturnsFalseWhenNoAccessControlRequestMethod(t *testing.T) {
+	want := false
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	got := handleCORS(req, w, &res)
+
+	if got != want {
+		t.Errorf("Preflight = %t, want %t", got, want)
+	}
+}
+
+func TestHandleCORSReturnsFalseWhenNotOPTIONSRequest(t *testing.T) {
+	want := false
+	req, _ := http.NewRequest("POST", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	got := handleCORS(req, w, &res)
+
+	if got != want {
+		t.Errorf("Preflight = %t, want %t", got, want)
+	}
+}
+
+func TestHandleCORSReturnsTrueWhenPreflightFails(t *testing.T) {
+	want := true
 	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
 	req.Header.Set("Origin", "http://greencheese.com")
 	req.Header.Set("Access-Control-Request-Method", "POST")
@@ -958,6 +1025,59 @@ func ExampleCORSConfig_second() {
 	// POST
 	// X-Mangoes
 	// Origin
+	// 200
+	//
+}
+
+func ExampleCORSConfig_third() {
+	// Preflight Request using Test Browser
+	// Still returns status 200 even though preflight check fails
+	r := NewRouter()
+	r.SetGlobalCORS(CORSConfig{
+		Origins:        []string{"http://bluecheese.com"},
+		Methods:        []string{"POST", "PUT"},
+		Headers:        []string{"X-Mangoes"},
+		ExposedHeaders: []string{"X-Mangoes"},
+	})
+	r.Post("/fruits", func(c *Context) {
+		c.RespondWith("POST fruits")
+	})
+	r.Get("/fruits", func(c *Context) {
+		c.RespondWith("GET fruits")
+	})
+
+	br := NewBrowser(r)
+	hdrs := http.Header{}
+	hdrs.Set("Origin", "http://bluecheese.com")
+	hdrs.Set("Access-Control-Request-Method", "PATCH")
+	hdrs.Set("Access-Control-Request-Headers", "X-Mangoes")
+	resp, err := br.Options("http://greencheese.com/fruits", hdrs)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// Examine the response headers...
+	allowOrigin := resp.HeaderMap.Get("Access-Control-Allow-Origin")
+	allowMethods := resp.HeaderMap.Get("Access-Control-Allow-Methods")
+	allowHeaders := resp.HeaderMap.Get("Access-Control-Allow-Headers")
+	vary := resp.HeaderMap.Get("Vary")
+
+	// preflight check fails so all but the Resp.Code will be empty
+
+	fmt.Println(allowOrigin)
+	fmt.Println(allowMethods)
+	fmt.Println(allowHeaders)
+	fmt.Println(vary)
+	fmt.Println(resp.Code) // 200
+	fmt.Println(resp.Body)
+
+	// Output:
+	//
+	//
+	//
+	//
 	// 200
 	//
 }

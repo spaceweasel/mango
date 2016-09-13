@@ -185,6 +185,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if handleCORS(req, resp, resource) {
+		resp.WriteHeader(http.StatusOK)
 		return
 	}
 
