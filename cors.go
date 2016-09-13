@@ -54,6 +54,9 @@ func (c *CORSConfig) headersAllowed(headers string) bool {
 	ha := strings.Split(headers, ",")
 	for i := 0; i < len(ha); i++ {
 		h := strings.TrimSpace(ha[i])
+		if h == "" {
+			continue
+		}
 		if !stringInSlice(h, c.Headers) {
 			return false
 		}
@@ -131,9 +134,6 @@ func handleCORS(req *http.Request, w http.ResponseWriter, resource *Resource) (p
 			return
 		}
 		reqHeaders := req.Header.Get("Access-Control-Request-Headers")
-		if reqHeaders == "" {
-			return
-		}
 		if !corsConf.headersAllowed(reqHeaders) {
 			return
 		}

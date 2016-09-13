@@ -126,6 +126,36 @@ func TestHeaderAllowedReturnsFalseWhenNotAllHeadersInConfigHeaders(t *testing.T)
 	}
 }
 
+func TestHeaderAllowedReturnsTrueWhenEmptyHeaderAndHeadersInConfigHeaders(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Biscuit"}
+	got := cc.headersAllowed("")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedReturnsTrueWhenEmptyHeadersAndHeadersInConfigHeaders(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Biscuit"}
+	got := cc.headersAllowed(" , ")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedReturnsTrueWhenEmptyHeaderAndNoHeadersInConfigHeaders(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{}
+	got := cc.headersAllowed("")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
 func TestHandleCORSMakesNoChangesToResponseWhenResourceHasNoCORSConfig(t *testing.T) {
 	want := ""
 	req, _ := http.NewRequest("GET", "https://somewhere.com/mango", nil)
@@ -301,30 +331,6 @@ func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasACRequestMe
 		CORSConfig: &CORSConfig{
 			Origins: []string{"http://greencheese.com"},
 			Methods: []string{"GET"},
-		},
-	}
-	handleCORS(req, w, &res)
-
-	got := w.HeaderMap.Get("Access-Control-Allow-Origin")
-
-	if got != want {
-		t.Errorf("Origin = %q, want %q", got, want)
-	}
-}
-
-func TestHandleCORSDoesNotAddAllowOriginHeaderWhenPreflightRequestHasNoACRequestHeaders(t *testing.T) {
-	want := ""
-	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
-	req.Header.Set("Origin", "http://greencheese.com")
-	req.Header.Set("Access-Control-Request-Method", "POST")
-	w := httptest.NewRecorder()
-	res := Resource{
-		CORSConfig: &CORSConfig{
-			Origins: []string{"http://greencheese.com"},
-			Methods: []string{"POST"},
-		},
-		Handlers: map[string]ContextHandlerFunc{
-			"POST": nil,
 		},
 	}
 	handleCORS(req, w, &res)
