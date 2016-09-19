@@ -41,29 +41,6 @@ type CORSConfig struct {
 	MaxAge int
 }
 
-func (c *CORSConfig) originAllowed(origin string) bool {
-	return stringInSlice("*", c.Origins) ||
-		stringInSlice(origin, c.Origins)
-}
-
-func (c *CORSConfig) methodAllowed(method string) bool {
-	return stringInSlice(method, c.Methods)
-}
-
-func (c *CORSConfig) headersAllowed(headers string) bool {
-	ha := strings.Split(headers, ",")
-	for i := 0; i < len(ha); i++ {
-		h := strings.TrimSpace(ha[i])
-		if h == "" {
-			continue
-		}
-		if !stringInSlice(h, c.Headers) {
-			return false
-		}
-	}
-	return true
-}
-
 func (c *CORSConfig) clone() *CORSConfig {
 	cl := CORSConfig{
 		Origins:        c.Origins,
@@ -76,13 +53,80 @@ func (c *CORSConfig) clone() *CORSConfig {
 	return &cl
 }
 
-func (c *CORSConfig) merge(m CORSConfig) {
-	c.Origins = appendIfNotExists(c.Origins, m.Origins)
-	c.Methods = appendIfNotExists(c.Methods, m.Methods)
-	c.Headers = appendIfNotExists(c.Headers, m.Headers)
-	c.ExposedHeaders = appendIfNotExists(c.ExposedHeaders, m.ExposedHeaders)
-	c.Credentials = m.Credentials
-	c.MaxAge = m.MaxAge
+const allValues = "*"
+
+var simpleHeaders = []string{"accept", "accept-language", "content-language"}
+var simpleMethods = []string{"GET", "HEAD", "POST"}
+
+func (c *CORSConfig) originAllowed(origin string) bool {
+	return stringInSlice(allValues, c.Origins) ||
+		stringInSlice(origin, c.Origins)
+}
+
+func (c *CORSConfig) methodAllowed(method string) bool {
+	return stringInSlice(method, c.allMethods())
+}
+
+func (c *CORSConfig) allMethods() []string {
+	return appendIfNotExists(simpleMethods, c.Methods)
+}
+
+func (c *CORSConfig) headersAllowed(headers string) (allowedHeaders []string, allowed bool) {
+	rh := strings.Split(headers, ",")
+OUTER:
+	for i := 0; i < len(rh); i++ {
+		// Access-Control-Request-Headers "should" contain lowercase headers,
+		// but not all browsers seem to respect this; convert to lowercase to be sure.
+		requestedHeader := strings.ToLower(strings.TrimSpace(rh[i]))
+		if requestedHeader == "" {
+			continue
+		}
+
+		// Simple headers should not be included in ACRH, but not all browsers
+		// follow this either; for example, Chrome includes them, but Firefox
+		// does not.
+		//
+		// Each ACRH needs to match something or the preflight will fail, so
+		// exmaine header to see if is simple, but do not include in the
+		// result
+		for _, sh := range simpleHeaders {
+			if requestedHeader == sh {
+				continue OUTER
+			}
+		}
+
+		// Check against resource configured allowed headers
+		for _, ah := range c.Headers {
+			if requestedHeader == strings.ToLower(ah) {
+				allowedHeaders = append(allowedHeaders, ah)
+				continue OUTER
+			} else if ah == allValues {
+				allowedHeaders = append(allowedHeaders, http.CanonicalHeaderKey(requestedHeader))
+				continue OUTER
+			}
+		}
+
+		// Treat Content-Type as a special case, as it is similar to a simple
+		// header, except it should be included in the result
+		if requestedHeader == "content-type" {
+			allowedHeaders = append(allowedHeaders, "Content-Type")
+			continue
+		}
+
+		allowed = false
+		return
+	}
+	allowed = true
+	return
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
 
 func appendIfNotExists(dest []string, src []string) []string {
@@ -94,13 +138,13 @@ func appendIfNotExists(dest []string, src []string) []string {
 	return dest
 }
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
+func (c *CORSConfig) merge(m CORSConfig) {
+	c.Origins = appendIfNotExists(c.Origins, m.Origins)
+	c.Methods = appendIfNotExists(c.Methods, m.Methods)
+	c.Headers = appendIfNotExists(c.Headers, m.Headers)
+	c.ExposedHeaders = appendIfNotExists(c.ExposedHeaders, m.ExposedHeaders)
+	c.Credentials = m.Credentials
+	c.MaxAge = m.MaxAge
 }
 
 // type CORSType int
@@ -134,21 +178,31 @@ func handleCORS(req *http.Request, w http.ResponseWriter, resource *Resource) (p
 		if _, ok := resource.Handlers[method]; !ok {
 			return
 		}
-		reqHeaders := req.Header.Get("Access-Control-Request-Headers")
-		if !corsConf.headersAllowed(reqHeaders) {
+
+		requestHeaders := req.Header["Access-Control-Request-Headers"]
+		reqHeaders := strings.Join(requestHeaders, ",")
+		allowedHeaders, ok := corsConf.headersAllowed(reqHeaders)
+		if !ok {
 			return
 		}
 
-		for _, m := range (*corsConf).Methods {
+		// Preflight successful!
+		// Now set relevant Access-Control-Allow-X response headers...
+
+		// Could just set Access-Control-Allow-Methods to single method in
+		// Access-Control-Request-Method, but returning all acceptable methods
+		// for a resource is better for caching
+		for _, m := range corsConf.allMethods() {
 			if _, ok := resource.Handlers[m]; !ok {
 				continue
 			}
 			w.Header().Add("Access-Control-Allow-Methods", m)
 		}
 
-		for _, h := range (*corsConf).Headers {
+		for _, h := range allowedHeaders {
 			w.Header().Add("Access-Control-Allow-Headers", h)
 		}
+
 		if (*corsConf).MaxAge > 0 {
 			maStr := strconv.Itoa((*corsConf).MaxAge)
 			w.Header().Set("Access-Control-Max-Age", maStr)

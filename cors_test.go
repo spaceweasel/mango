@@ -48,8 +48,35 @@ func TestOriginAllowedReturnsTrueWhenConfigOriginsContainsStar(t *testing.T) {
 	}
 }
 
-func TestMethodAllowedReturnsFalseWhenNoMethodsInConfigMethods(t *testing.T) {
+func TestMethodAllowedReturnsFalseWhenNoMethodsInConfigMethodsAndMethodIsNotSimple(t *testing.T) {
 	want := false
+	cc := CORSConfig{}
+	got := cc.methodAllowed("PUT")
+	if got != want {
+		t.Errorf("Method Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestMethodAllowedReturnsTrueWhenNoMethodsInConfigMethodsAndMethodIsSimpleGet(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	got := cc.methodAllowed("GET")
+	if got != want {
+		t.Errorf("Method Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestMethodAllowedReturnsTrueWhenNoMethodsInConfigMethodsAndMethodIsSimpleHead(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	got := cc.methodAllowed("HEAD")
+	if got != want {
+		t.Errorf("Method Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestMethodAllowedReturnsTrueWhenNoMethodsInConfigMethodsAndMethodIsSimplePost(t *testing.T) {
+	want := true
 	cc := CORSConfig{}
 	got := cc.methodAllowed("POST")
 	if got != want {
@@ -57,11 +84,11 @@ func TestMethodAllowedReturnsFalseWhenNoMethodsInConfigMethods(t *testing.T) {
 	}
 }
 
-func TestMethodAllowedReturnsFalseWhenMethodNotInConfigMethods(t *testing.T) {
+func TestMethodAllowedReturnsFalseWhenNonSimpleMethodAndMethodNotInConfigMethods(t *testing.T) {
 	want := false
 	cc := CORSConfig{}
 	cc.Methods = []string{"PATCH", "PUT"}
-	got := cc.methodAllowed("POST")
+	got := cc.methodAllowed("DELETE")
 	if got != want {
 		t.Errorf("Method Allowed = %t, want %t", got, want)
 	}
@@ -70,8 +97,8 @@ func TestMethodAllowedReturnsFalseWhenMethodNotInConfigMethods(t *testing.T) {
 func TestMethodAllowedReturnsTrueWhenMethodInConfigMethods(t *testing.T) {
 	want := true
 	cc := CORSConfig{}
-	cc.Methods = []string{"POST", "PUT"}
-	got := cc.methodAllowed("POST")
+	cc.Methods = []string{"DELETE", "PUT"}
+	got := cc.methodAllowed("DELETE")
 	if got != want {
 		t.Errorf("Method Allowed = %t, want %t", got, want)
 	}
@@ -80,7 +107,7 @@ func TestMethodAllowedReturnsTrueWhenMethodInConfigMethods(t *testing.T) {
 func TestHeaderAllowedReturnsFalseWhenNoHeadersInConfigHeaders(t *testing.T) {
 	want := false
 	cc := CORSConfig{}
-	got := cc.headersAllowed("http://elsewhere.com")
+	_, got := cc.headersAllowed("http://elsewhere.com")
 	if got != want {
 		t.Errorf("Header Allowed = %t, want %t", got, want)
 	}
@@ -90,7 +117,7 @@ func TestHeaderAllowedReturnsFalseWhenHeaderNotInConfigHeaders(t *testing.T) {
 	want := false
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special"}
-	got := cc.headersAllowed("X-Moondust")
+	_, got := cc.headersAllowed("X-Moondust")
 	if got != want {
 		t.Errorf("Header Allowed = %t, want %t", got, want)
 	}
@@ -100,7 +127,7 @@ func TestHeaderAllowedReturnsTrueWhenHeaderInConfigHeaders(t *testing.T) {
 	want := true
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special"}
-	got := cc.headersAllowed("X-Fruit")
+	_, got := cc.headersAllowed("X-Fruit")
 	if got != want {
 		t.Errorf("Header Allowed = %t, want %t", got, want)
 	}
@@ -110,9 +137,72 @@ func TestHeaderAllowedReturnsTrueWhenAllHeadersInConfigHeaders(t *testing.T) {
 	want := true
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special", "X-Mango", "X-Biscuit"}
-	got := cc.headersAllowed("X-Fruit, X-Biscuit, X-Mango")
+	_, got := cc.headersAllowed("X-Fruit, X-Biscuit, X-Mango")
 	if got != want {
 		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedReturnsTrueIfHeaderIncludesSimpleHeader(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Mango", "X-Biscuit"}
+	_, got := cc.headersAllowed("X-Fruit, Accept, Content-Language, X-Mango")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedReturnsTrueIfHeaderIncludesContentType(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Mango", "X-Biscuit"}
+	_, got := cc.headersAllowed("X-Fruit, Accept, Content-Type, X-Mango")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedHeadersIncludesContentTypeIfHeaderIncludesContentType(t *testing.T) {
+	want := "X-Fruit,Content-Type,X-Mango"
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Mango", "X-Biscuit"}
+	h, _ := cc.headersAllowed("X-Fruit, Content-Type, X-Mango")
+	got := strings.Join(h, ",")
+	if got != want {
+		t.Errorf("Headers Allowed = %q, want %q", got, want)
+	}
+}
+
+func TestHeaderAllowedHeadersExcludesSimpleHeadersIfHeaderIncludesSimpleHeader(t *testing.T) {
+	want := "X-Fruit,X-Mango"
+	cc := CORSConfig{}
+	cc.Headers = []string{"X-Fruit", "X-Special", "X-Mango", "X-Biscuit"}
+	h, _ := cc.headersAllowed("X-Fruit, Accept, Content-Language, X-Mango")
+	got := strings.Join(h, ",")
+	if got != want {
+		t.Errorf("Headers Allowed = %q, want %q", got, want)
+	}
+}
+
+func TestHeaderAllowedReturnsTrueWhenWildcardInConfig(t *testing.T) {
+	want := true
+	cc := CORSConfig{}
+	cc.Headers = []string{"*"}
+	_, got := cc.headersAllowed("X-Fruit, Accept, Content-Language, Content-Type, X-Mango")
+	if got != want {
+		t.Errorf("Headers Allowed = %t, want %t", got, want)
+	}
+}
+
+func TestHeaderAllowedHeadersIncludesRequestedHeadersWhenWildcardInConfig(t *testing.T) {
+	want := "X-Fruit,Content-Type,X-Mango"
+	cc := CORSConfig{}
+	cc.Headers = []string{"*"}
+	h, _ := cc.headersAllowed("X-Fruit, Accept, Content-Language, Content-Type, X-Mango")
+	got := strings.Join(h, ",")
+	if got != want {
+		t.Errorf("Headers Allowed = %q, want %q", got, want)
 	}
 }
 
@@ -120,7 +210,7 @@ func TestHeaderAllowedReturnsFalseWhenNotAllHeadersInConfigHeaders(t *testing.T)
 	want := false
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special", "X-Biscuit"}
-	got := cc.headersAllowed("X-Fruit, X-Biscuit, X-Mango")
+	_, got := cc.headersAllowed("X-Fruit, X-Biscuit, X-Mango")
 	if got != want {
 		t.Errorf("Headers Allowed = %t, want %t", got, want)
 	}
@@ -130,7 +220,7 @@ func TestHeaderAllowedReturnsTrueWhenEmptyHeaderAndHeadersInConfigHeaders(t *tes
 	want := true
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special", "X-Biscuit"}
-	got := cc.headersAllowed("")
+	_, got := cc.headersAllowed("")
 	if got != want {
 		t.Errorf("Headers Allowed = %t, want %t", got, want)
 	}
@@ -140,7 +230,7 @@ func TestHeaderAllowedReturnsTrueWhenEmptyHeadersAndHeadersInConfigHeaders(t *te
 	want := true
 	cc := CORSConfig{}
 	cc.Headers = []string{"X-Fruit", "X-Special", "X-Biscuit"}
-	got := cc.headersAllowed(" , ")
+	_, got := cc.headersAllowed(" , ")
 	if got != want {
 		t.Errorf("Headers Allowed = %t, want %t", got, want)
 	}
@@ -150,7 +240,7 @@ func TestHeaderAllowedReturnsTrueWhenEmptyHeaderAndNoHeadersInConfigHeaders(t *t
 	want := true
 	cc := CORSConfig{}
 	cc.Headers = []string{}
-	got := cc.headersAllowed("")
+	_, got := cc.headersAllowed("")
 	if got != want {
 		t.Errorf("Headers Allowed = %t, want %t", got, want)
 	}
@@ -422,11 +512,112 @@ func TestHandleCORSSetsAllowMethodsWhenPreflightSucceeds(t *testing.T) {
 }
 
 func TestHandleCORSSetsAllowHeadersWhenPreflightSucceeds(t *testing.T) {
-	want := "X-Cheese, X-Mangoes"
+	want := "X-Mangoes"
 	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
 	req.Header.Set("Origin", "http://greencheese.com")
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	req.Header.Set("Access-Control-Request-Headers", "X-Mangoes")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese", "X-Mangoes"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	handleCORS(req, w, &res)
+	got := strings.Join(w.HeaderMap["Access-Control-Allow-Headers"], ", ")
+
+	if got != want {
+		t.Errorf("Headers = %q, want %q", got, want)
+	}
+}
+
+func TestHandleCORSUsesCaseInsensitiveMatchForACRequestHeaders(t *testing.T) {
+	want := "X-Mangoes"
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "x-mangoes")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese", "X-Mangoes"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	handleCORS(req, w, &res)
+	got := strings.Join(w.HeaderMap["Access-Control-Allow-Headers"], ", ")
+
+	if got != want {
+		t.Errorf("Headers = %q, want %q", got, want)
+	}
+}
+
+func TestHandleCORSUsesCanonicalACRequestHeaders(t *testing.T) {
+	want := "X-Mangoes"
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("access-control-request-headers", "x-mangoes")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese", "X-Mangoes"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	handleCORS(req, w, &res)
+	got := strings.Join(w.HeaderMap["Access-Control-Allow-Headers"], ", ")
+
+	if got != want {
+		t.Errorf("Headers = %q, want %q", got, want)
+	}
+}
+
+func TestHandleCORSExaminesAllACRequestHeadersWhenCommaSeparated(t *testing.T) {
+	want := "X-Mangoes, X-Cheese"
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "x-mangoes, x-cheese")
+	w := httptest.NewRecorder()
+	res := Resource{
+		CORSConfig: &CORSConfig{
+			Origins: []string{"http://greencheese.com"},
+			Methods: []string{"POST", "PATCH"},
+			Headers: []string{"X-Cheese", "X-Mangoes"},
+		},
+		Handlers: map[string]ContextHandlerFunc{
+			"POST": nil,
+		},
+	}
+	handleCORS(req, w, &res)
+	got := strings.Join(w.HeaderMap["Access-Control-Allow-Headers"], ", ")
+
+	if got != want {
+		t.Errorf("Headers = %q, want %q", got, want)
+	}
+}
+
+func TestHandleCORSExaminesAllACRequestHeadersWhenIndividualHeaders(t *testing.T) {
+	want := "X-Mangoes, X-Cheese"
+	req, _ := http.NewRequest("OPTIONS", "https://somewhere.com/mango", nil)
+	req.Header.Set("Origin", "http://greencheese.com")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "x-mangoes")
+	req.Header.Add("Access-Control-Request-Headers", "x-cheese")
 	w := httptest.NewRecorder()
 	res := Resource{
 		CORSConfig: &CORSConfig{
@@ -1009,12 +1200,12 @@ func ExampleCORSConfig_second() {
 
 	// Examine the response headers...
 	allowOrigin := resp.HeaderMap.Get("Access-Control-Allow-Origin")
-	allowMethods := resp.HeaderMap.Get("Access-Control-Allow-Methods")
+	allowMethods := strings.Join(resp.HeaderMap["Access-Control-Allow-Methods"], ",")
 	allowHeaders := resp.HeaderMap.Get("Access-Control-Allow-Headers")
 	vary := resp.HeaderMap.Get("Vary")
 
 	fmt.Println(allowOrigin)  // http://bluecheese.com
-	fmt.Println(allowMethods) // POST (PUT has no handler, so is removed from list)
+	fmt.Println(allowMethods) // GET,POST (PUT has no handler, so is removed from list)
 	fmt.Println(allowHeaders) // X-Mangoes
 	fmt.Println(vary)         // Origin
 	fmt.Println(resp.Code)    // 200
@@ -1022,7 +1213,7 @@ func ExampleCORSConfig_second() {
 
 	// Output:
 	// http://bluecheese.com
-	// POST
+	// GET,POST
 	// X-Mangoes
 	// Origin
 	// 200
