@@ -965,6 +965,8 @@ func getDefaultValidators() []Validator {
 		LenMinValidator{},
 		LenMaxValidator{},
 		LenRangeValidator{},
+		ContainsValidator{},
+		InSetValidator{},
 		NotEmptyValidator{},
 		NotZeroValidator{},
 		NotNilValidator{},
