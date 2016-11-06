@@ -974,7 +974,7 @@ func TestRouterAddValidator(t *testing.T) {
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
 	r.ValidationHandler = &evh
-	r.AddValidator(Int32Validator{})
+	r.AddValidator(&Int32Validator{})
 	_, valid := r.IsValid("123", "int32")
 	got := valid
 	if got != want {
@@ -988,7 +988,7 @@ func TestRouterAddValidators(t *testing.T) {
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
 	r.ValidationHandler = &evh
-	r.AddValidators([]Validator{Int32Validator{}})
+	r.AddValidators([]Validator{&Int32Validator{}})
 	_, valid := r.IsValid("123", "int32")
 	got := valid
 	if got != want {
@@ -1013,8 +1013,8 @@ func TestRouterAddValidatorPanicsIfConstraintConflicts(t *testing.T) {
 	evh := elementValidationHandler{}
 	evh.validators = make(map[string]Validator)
 	r.ValidationHandler = &evh
-	r.AddValidator(Int32Validator{})
-	r.AddValidator(dupValidator{})
+	r.AddValidator(&Int32Validator{})
+	r.AddValidator(&dupValidator{})
 }
 
 func TestRouterAddValidatorsPanicsIfConstraintConflicts(t *testing.T) {
@@ -1035,8 +1035,8 @@ func TestRouterAddValidatorsPanicsIfConstraintConflicts(t *testing.T) {
 	evh.validators = make(map[string]Validator)
 	r.ValidationHandler = &evh
 	r.AddValidators([]Validator{
-		Int32Validator{},
-		dupValidator{},
+		&Int32Validator{},
+		&dupValidator{},
 	})
 }
 
@@ -1456,7 +1456,7 @@ func TestRouterNewValidatorsAddedAreAvailableToModelValidator(t *testing.T) {
 	rtr.ValidationHandler = &evh
 	rtr.modelValidator = newModelValidator(rtr.ValidationHandler)
 
-	rtr.AddValidator(CheeseValidator{})
+	rtr.AddValidator(&CheeseValidator{})
 
 	type model struct {
 		Name string `validate:"cheese"`

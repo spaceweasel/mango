@@ -12,8 +12,8 @@ import (
 // contain the validator type and Message a user friendly description of
 // the reason for the failure.
 type ValidationFailure struct {
-	Code    string
-	Message string
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // Validator is the interface that wraps the basic Validate method.
@@ -68,7 +68,8 @@ func (r *elementValidationHandler) IsValid(val interface{}, constraints string) 
 		if name == "ignorecontents" {
 			continue
 		}
-		v, ok := r.validators[name]
+		var v Validator
+		v, ok = r.validators[name]
 		if !ok {
 			panic(fmt.Sprintf("unknown constraint: %s", name))
 		}
@@ -154,20 +155,20 @@ func newValidationHandler() ValidationHandler {
 type EmptyValidator struct{}
 
 // Validate returns true in all cases. This is the default validator.
-func (EmptyValidator) Validate(val interface{}, args []string) bool {
+func (v *EmptyValidator) Validate(val interface{}, args []string) bool {
 	return true
 }
 
 // Type returns the constraint name. This is an empty string to
 // ensure this validator is selected when no constraint has been
 // specified in the route pattern parameter.
-func (EmptyValidator) Type() string {
+func (v *EmptyValidator) Type() string {
 	return ""
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
 // As this validator never fails, this method just returns an empty string.
-func (EmptyValidator) FailureMsg() string {
+func (v *EmptyValidator) FailureMsg() string {
 	return ""
 }
 
@@ -177,7 +178,7 @@ type Int32Validator struct{}
 // Validate tests for 32 bit integer values.
 // Returns true if val is a string containing an integer in the range -2147483648 to 2147483647
 // Validate panics if val is not a string.
-func (Int32Validator) Validate(val interface{}, params []string) bool {
+func (v *Int32Validator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("int32 validator can only validate strings not, %T", val))
@@ -187,13 +188,13 @@ func (Int32Validator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (int32).
-func (Int32Validator) Type() string {
+func (v *Int32Validator) Type() string {
 	return "int32"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (Int32Validator) FailureMsg() string {
-	return "Must be a 32 bit integer."
+func (v *Int32Validator) FailureMsg() string {
+	return "must be a 32 bit integer."
 }
 
 // Int64Validator tests for 64 bit integer values.
@@ -202,7 +203,7 @@ type Int64Validator struct{}
 // Validate tests for 64 bit integer values.
 // Returns true if val is a string containing an integer in the range -9223372036854775808 to 9223372036854775807
 // Validate panics if val is not a string.
-func (Int64Validator) Validate(val interface{}, params []string) bool {
+func (v *Int64Validator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("int64 validator can only validate strings not, %T", val))
@@ -212,13 +213,13 @@ func (Int64Validator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (int64).
-func (Int64Validator) Type() string {
+func (v *Int64Validator) Type() string {
 	return "int64"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (Int64Validator) FailureMsg() string {
-	return "Must be a 64 bit integer."
+func (v *Int64Validator) FailureMsg() string {
+	return "must be a 64 bit integer."
 }
 
 // AlphaValidator tests for a sequence containing only alpha characters.
@@ -227,7 +228,7 @@ type AlphaValidator struct{}
 // Validate tests for alpha values.
 // Returns true if val is a string containing only characters in the ranges a-z or A-Z.
 // Validate panics if val is not a string.
-func (AlphaValidator) Validate(val interface{}, params []string) bool {
+func (v *AlphaValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("alpha validator can only validate strings not, %T", val))
@@ -237,13 +238,13 @@ func (AlphaValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (alpha).
-func (AlphaValidator) Type() string {
+func (v *AlphaValidator) Type() string {
 	return "alpha"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (AlphaValidator) FailureMsg() string {
-	return "Must contain only alpha characters."
+func (v *AlphaValidator) FailureMsg() string {
+	return "must contain only alpha characters."
 }
 
 // DigitsValidator tests for a sequence of digits.
@@ -252,7 +253,7 @@ type DigitsValidator struct{}
 // Validate tests for digit values.
 // Returns true if val is a string containing only digits 0-9.
 // Validate panics if val is not a string.
-func (DigitsValidator) Validate(val interface{}, params []string) bool {
+func (v *DigitsValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("digits validator can only validate strings not, %T", val))
@@ -262,13 +263,13 @@ func (DigitsValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (digits).
-func (DigitsValidator) Type() string {
+func (v *DigitsValidator) Type() string {
 	return "digits"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (DigitsValidator) FailureMsg() string {
-	return "Must contain only digit characters."
+func (v *DigitsValidator) FailureMsg() string {
+	return "must contain only digit characters."
 }
 
 // Hex32Validator tests for 32 bit hex values.
@@ -278,7 +279,7 @@ type Hex32Validator struct{}
 // Returns true if val is a hexadecimal string in the range -80000000 to 7FFFFFFF.
 // The test is not case sensitive, i.e. 3ef42bc7 and 3EF42BC7 will both return true.
 // Validate panics if val is not a string.
-func (Hex32Validator) Validate(val interface{}, params []string) bool {
+func (v *Hex32Validator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("hex32 validator can only validate strings not, %T", val))
@@ -288,13 +289,13 @@ func (Hex32Validator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (hex32).
-func (Hex32Validator) Type() string {
+func (v *Hex32Validator) Type() string {
 	return "hex32"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (Hex32Validator) FailureMsg() string {
-	return "Must be a 32 bit hexadecimal value."
+func (v *Hex32Validator) FailureMsg() string {
+	return "must be a 32 bit hexadecimal value."
 }
 
 // Hex64Validator tests for 64 bit hex values.
@@ -304,7 +305,7 @@ type Hex64Validator struct{}
 // Returns true if val is a hexadecimal string in the range -8000000000000000 to 7FFFFFFFFFFFFFFF.
 // The test is not case sensitive, i.e. 3ef42bc7 and 3EF42BC7 will both return true.
 // Validate panics if val is not a string.
-func (Hex64Validator) Validate(val interface{}, params []string) bool {
+func (v *Hex64Validator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("hex64 validator can only validate strings not, %T", val))
@@ -314,13 +315,13 @@ func (Hex64Validator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (hex64).
-func (Hex64Validator) Type() string {
+func (v *Hex64Validator) Type() string {
 	return "hex64"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (Hex64Validator) FailureMsg() string {
-	return "Must be a 64 bit hexadecimal value."
+func (v *Hex64Validator) FailureMsg() string {
+	return "must be a 64 bit hexadecimal value."
 }
 
 // HexValidator tests for a sequence of hexadecimal characters.
@@ -329,7 +330,7 @@ type HexValidator struct{}
 // Validate tests for hex values.
 // Returns true if if val is a string containing only hex characters, (i.e. 0-9, a-e, A-F).
 // Validate panics if val is not a string.
-func (HexValidator) Validate(val interface{}, params []string) bool {
+func (v *HexValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("hex validator can only validate strings not, %T", val))
@@ -339,13 +340,13 @@ func (HexValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (hex).
-func (HexValidator) Type() string {
+func (v *HexValidator) Type() string {
 	return "hex"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (HexValidator) FailureMsg() string {
-	return "Must contain only hexadecimal characters."
+func (v *HexValidator) FailureMsg() string {
+	return "must contain only hexadecimal characters."
 }
 
 // UUIDValidator tests for UUIDs.
@@ -374,7 +375,7 @@ type UUIDValidator struct{}
 //  58D5E212165B4CA0909BC86B9CEE0111
 //
 // Validate panics if val is not a string.
-func (UUIDValidator) Validate(val interface{}, params []string) bool {
+func (v *UUIDValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("uuid validator can only validate strings not, %T", val))
@@ -395,22 +396,22 @@ func (UUIDValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (uuid).
-func (UUIDValidator) Type() string {
+func (v *UUIDValidator) Type() string {
 	return "uuid"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (UUIDValidator) FailureMsg() string {
-	return "Must be a valid UUID."
+func (v *UUIDValidator) FailureMsg() string {
+	return "must be a valid UUID."
 }
 
 // AlphaNumValidator tests for a sequence containing only alphanumeric characters.
 type AlphaNumValidator struct{}
 
 // Validate tests for alphanumeric values.
-// Returns true if if val is a string containing only characters in the ranges a-z, A-Z or 0-9.
+// Returns true if val is a string containing only characters in the ranges a-z, A-Z or 0-9.
 // Validate panics if val is not a string.
-func (AlphaNumValidator) Validate(val interface{}, params []string) bool {
+func (v *AlphaNumValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("alphanum validator can only validate strings not, %T", val))
@@ -420,87 +421,149 @@ func (AlphaNumValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (alphanum).
-func (AlphaNumValidator) Type() string {
+func (v *AlphaNumValidator) Type() string {
 	return "alphanum"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (AlphaNumValidator) FailureMsg() string {
-	return "Must contain only alphanumeric characters."
+func (v *AlphaNumValidator) FailureMsg() string {
+	return "must contain only alphanumeric characters."
+}
+
+// SentenceValidator tests for a sequence containing only characters normally found
+// in a sentence.
+type SentenceValidator struct{}
+
+// Validate tests for characters normally found in a sentence.
+// Returns true if val is a string containing only characters in the ranges a-z,
+// A-Z or 0-9, plus spaces and punctuation characters ,.:;!? single and double quotes,
+// braces and hyphens. Note that underscores are not included in the permissble set.
+// Validate panics if val is not a string.
+func (v *SentenceValidator) Validate(val interface{}, params []string) bool {
+	s, ok := val.(string)
+	if !ok {
+		panic(fmt.Sprintf("sentence validator can only validate strings not, %T", val))
+	}
+	re := regexp.MustCompile(`^[a-zA-Z0-9 ,.()'":;!?-]+$`)
+	return re.MatchString(s)
+}
+
+// Type returns the constraint name (sentence).
+func (v *SentenceValidator) Type() string {
+	return "sentence"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (v *SentenceValidator) FailureMsg() string {
+	return "must contain only characters found in a sentence."
+}
+
+// PhoneValidator tests for a telephone number.
+type PhoneValidator struct{}
+
+// Validate tests for phone number.
+// Returns true if val is a string containing only characters found in a telephone
+// number. e.g. +44 1752 123456, (1752) 123456 or 01752 123456
+// Validate panics if val is not a string.
+func (v *PhoneValidator) Validate(val interface{}, params []string) bool {
+	s, ok := val.(string)
+	if !ok {
+		panic(fmt.Sprintf("phone validator can only validate strings not, %T", val))
+	}
+	re := regexp.MustCompile(`^(\+[0-9]+)?\s?((\([0-9]+\))|([0-9]+))?\s?[0-9]+\s?[0-9]+$`)
+	return re.MatchString(s)
+}
+
+// Type returns the constraint name (phone).
+func (v *PhoneValidator) Type() string {
+	return "phone"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (v *PhoneValidator) FailureMsg() string {
+	return "must contain a telephone number."
 }
 
 // PrefixValidator tests for a specified prefix.
-type PrefixValidator struct{}
+type PrefixValidator struct {
+	prefix string
+}
 
 // Validate tests for a prefix.
 // Returns true if val is a string starting with the prefix specified in params.
 // Validate panics if val is not a string.
-func (PrefixValidator) Validate(val interface{}, params []string) bool {
+func (v *PrefixValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("prefix validator can only validate strings not, %T", val))
 	}
-	pf := ""
+
+	v.prefix = ""
 	if len(params) > 0 {
-		pf = params[0]
+		v.prefix = params[0]
 	}
-	return strings.HasPrefix(s, pf)
+
+	return strings.HasPrefix(s, v.prefix)
 }
 
 // Type returns the constraint name (prefix).
-func (PrefixValidator) Type() string {
+func (v *PrefixValidator) Type() string {
 	return "prefix"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (PrefixValidator) FailureMsg() string {
-	return "Must have the correct prefix."
+func (v *PrefixValidator) FailureMsg() string {
+	return fmt.Sprintf("must have the prefix %q.", v.prefix)
 }
 
 // SuffixValidator tests for a specified suffix.
-type SuffixValidator struct{}
+type SuffixValidator struct {
+	suffix string
+}
 
 // Validate tests for a suffix.
 // Returns true if val is a string ending with the suffix specified in params.
 // Validate panics if val is not a string.
-func (SuffixValidator) Validate(val interface{}, params []string) bool {
+func (v *SuffixValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
 	if !ok {
 		panic(fmt.Sprintf("suffix validator can only validate strings not, %T", val))
 	}
-	sf := ""
+	v.suffix = ""
 	if len(params) > 0 {
-		sf = params[0]
+		v.suffix = params[0]
 	}
-	return strings.HasSuffix(s, sf)
+	return strings.HasSuffix(s, v.suffix)
 }
 
 // Type returns the constraint name (suffix).
-func (SuffixValidator) Type() string {
+func (v *SuffixValidator) Type() string {
 	return "suffix"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (SuffixValidator) FailureMsg() string {
-	return "Must have the correct suffix."
+func (v *SuffixValidator) FailureMsg() string {
+	return fmt.Sprintf("must have the suffix %q.", v.suffix)
 }
 
 // MinValidator tests for a minumum numeric value.
-type MinValidator struct{}
+type MinValidator struct {
+	min string
+}
 
 // Validate tests for a minimum numerical value.
 // Returns true if val is a number greater or equal to the value specified in params.
 // Validate panics if val is not a number or supplied params argument is not a number.
-func (MinValidator) Validate(val interface{}, params []string) bool {
+func (v *MinValidator) Validate(val interface{}, params []string) bool {
 	number, ok := normalizeNumber(val)
 	if !ok {
 		panic(fmt.Sprintf("min validator can only validate numbers not, %T", val))
 	}
-
+	v.min = ""
 	if len(params) == 0 {
 		panic("missing parameter for MinValidator")
 	}
-
+	v.min = params[0]
 	switch reflect.TypeOf(number).Kind() {
 	case reflect.Int64:
 		p, err := strconv.ParseInt(params[0], 10, 64)
@@ -522,30 +585,33 @@ func (MinValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (min).
-func (MinValidator) Type() string {
+func (v *MinValidator) Type() string {
 	return "min"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (MinValidator) FailureMsg() string {
-	return "Must not be less than the minimum permitted."
+func (v *MinValidator) FailureMsg() string {
+	return fmt.Sprintf("must not be less than %v.", v.min)
 }
 
 // MaxValidator tests for a maxumum numeric value.
-type MaxValidator struct{}
+type MaxValidator struct {
+	max string
+}
 
 // Validate tests for a maximum numerical value.
 // Returns true if val is a number lower or equal to the value specified in params.
 // Validate panics if val is not a number or supplied params argument is not a number.
-func (MaxValidator) Validate(val interface{}, params []string) bool {
+func (v *MaxValidator) Validate(val interface{}, params []string) bool {
 	number, ok := normalizeNumber(val)
 	if !ok {
 		panic(fmt.Sprintf("max validator can only validate numbers not, %T", val))
 	}
-
+	v.max = ""
 	if len(params) == 0 {
 		panic("missing parameter for MaxValidator")
 	}
+	v.max = params[0]
 	switch reflect.TypeOf(number).Kind() {
 	case reflect.Int64:
 		p, err := strconv.ParseInt(params[0], 10, 64)
@@ -567,32 +633,39 @@ func (MaxValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (max).
-func (MaxValidator) Type() string {
+func (v *MaxValidator) Type() string {
 	return "max"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (MaxValidator) FailureMsg() string {
-	return "Must not be greater than the maximum permitted."
+func (v *MaxValidator) FailureMsg() string {
+	return fmt.Sprintf("must not be greater than %v.", v.max)
 }
 
 // RangeValidator tests for a numerical value in a given range.
-type RangeValidator struct{}
+type RangeValidator struct {
+	min string
+	max string
+}
 
 // Validate tests for a numerical value in a given range.
 // Returns true if val is a number between the lower and upper limits specified in params.
 // Example: range(2,4) - returns true if input is between 2 and 4 (inclusive).
 // RangeValidator accepts all numeric types, e.g. range(3.123, 23456.89).
 // Validate panics if val is not a number or supplied params arguments are not a numbers.
-func (RangeValidator) Validate(val interface{}, params []string) bool {
+func (v *RangeValidator) Validate(val interface{}, params []string) bool {
 	number, ok := normalizeNumber(val)
 	if !ok {
 		panic(fmt.Sprintf("range validator can only validate numbers not, %T", val))
 	}
 
+	v.min = ""
+	v.max = ""
 	if len(params) != 2 {
 		panic("missing parameters for RangeValidator")
 	}
+	v.min = params[0]
+	v.max = params[1]
 	switch reflect.TypeOf(number).Kind() {
 	case reflect.Int64:
 		l, errl := strconv.ParseInt(params[0], 10, 64)
@@ -620,25 +693,28 @@ func (RangeValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (range).
-func (RangeValidator) Type() string {
+func (v *RangeValidator) Type() string {
 	return "range"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (RangeValidator) FailureMsg() string {
-	return "Must be within the permitted range."
+func (v *RangeValidator) FailureMsg() string {
+	return fmt.Sprintf("must be between %v and %v.", v.min, v.max)
 }
 
 // LenMinValidator tests for a minimim length of String, Array, Slice or Map.
-type LenMinValidator struct{}
+type LenMinValidator struct {
+	min string
+}
 
 // Validate tests for a minimim length.
 // Returns true if length of val is greater or equal to the value specified in params.
 // Validate panics if val is not a String, Array, Slice or Map, or if supplied params argument is not an integer.
-func (LenMinValidator) Validate(val interface{}, params []string) bool {
+func (v *LenMinValidator) Validate(val interface{}, params []string) bool {
 	if len(params) == 0 {
 		panic("missing parameter for LenMinValidator")
 	}
+	v.min = params[0]
 	l, err := strconv.Atoi(params[0])
 	if err != nil {
 		panic("non-integer parameter used in LenMinValidator")
@@ -653,25 +729,28 @@ func (LenMinValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (lenmin).
-func (LenMinValidator) Type() string {
+func (v *LenMinValidator) Type() string {
 	return "lenmin"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (LenMinValidator) FailureMsg() string {
-	return "Must not contain fewer elements than minimum permitted."
+func (v *LenMinValidator) FailureMsg() string {
+	return fmt.Sprintf("must contain at least %v elements.", v.min)
 }
 
 // LenMaxValidator tests for a maximum length of String, Array, Slice or Map.
-type LenMaxValidator struct{}
+type LenMaxValidator struct {
+	max string
+}
 
 // Validate tests for a maximum length.
 // Returns true if length of val is lower or equal to the value specified in params.
 // Validate panics if val is not a String, Array, Slice or Map, or if supplied params argument is not an integer.
-func (LenMaxValidator) Validate(val interface{}, params []string) bool {
+func (v *LenMaxValidator) Validate(val interface{}, params []string) bool {
 	if len(params) == 0 {
 		panic("missing parameter for LenMaxValidator")
 	}
+	v.max = params[0]
 	u, err := strconv.Atoi(params[0])
 	if err != nil {
 		panic("non-integer parameter used in LenMaxValidator")
@@ -686,25 +765,30 @@ func (LenMaxValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (lenmax).
-func (LenMaxValidator) Type() string {
+func (v *LenMaxValidator) Type() string {
 	return "lenmax"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (LenMaxValidator) FailureMsg() string {
-	return "Must not contain more elements than the maximum permitted."
+func (v *LenMaxValidator) FailureMsg() string {
+	return fmt.Sprintf("must not contain more than %v elements.", v.max)
 }
 
 // LenRangeValidator tests for length of String, Array, Slice or Map, in a given range.
-type LenRangeValidator struct{}
+type LenRangeValidator struct {
+	min string
+	max string
+}
 
 // Validate tests for a length in a given range.
 // Returns true if length of val is between the lower and upper limits specified in params.
 // Validate panics if val is not a String, Array, Slice or Map, or if supplied params arguments are not an integer.
-func (LenRangeValidator) Validate(val interface{}, params []string) bool {
+func (v *LenRangeValidator) Validate(val interface{}, params []string) bool {
 	if len(params) != 2 {
 		panic("missing parameters for LenRangeValidator")
 	}
+	v.min = params[0]
+	v.max = params[1]
 	l, errl := strconv.Atoi(params[0])
 	u, erru := strconv.Atoi(params[1])
 	if errl != nil || erru != nil {
@@ -721,28 +805,31 @@ func (LenRangeValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (lenrange).
-func (LenRangeValidator) Type() string {
+func (v *LenRangeValidator) Type() string {
 	return "lenrange"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (LenRangeValidator) FailureMsg() string {
-	return "Must have a quantity of elements within the permitted range."
+func (v *LenRangeValidator) FailureMsg() string {
+	return fmt.Sprintf("must contain between %v and %v elements.", v.min, v.max)
 }
 
 // ContainsValidator tests whether a container holds a specific string.
-type ContainsValidator struct{}
+type ContainsValidator struct {
+	required string
+}
 
 // Validate tests for a existence of a string within another string, Array, Slice
 // or Map (keys).
 // Returns true if val is a String, Array, Slice or Map containing the string
 // specified in params. Contains is case-sensitive.
 // Validate panics if val is not a String, Array, Slice or Map.
-func (ContainsValidator) Validate(val interface{}, params []string) bool {
-	s := ""
+func (v *ContainsValidator) Validate(val interface{}, params []string) bool {
+	v.required = ""
 	if len(params) > 0 {
-		s = params[0]
+		v.required = params[0]
 	}
+
 	rv := reflect.ValueOf(val)
 	switch rv.Kind() {
 	case reflect.Map:
@@ -754,7 +841,7 @@ func (ContainsValidator) Validate(val interface{}, params []string) bool {
 			if el.Kind() != reflect.String {
 				panic(fmt.Sprintf("contains validator can only validate maps with keys of string, not %T", key.Interface()))
 			}
-			if el.String() == s {
+			if el.String() == v.required {
 				return true
 			}
 		}
@@ -768,36 +855,39 @@ func (ContainsValidator) Validate(val interface{}, params []string) bool {
 			if el.Kind() != reflect.String {
 				panic(fmt.Sprintf("contains validator can only validate arrays and slices of string, not %T", el.Interface()))
 			}
-			if el.String() == s {
+			if el.String() == v.required {
 				return true
 			}
 		}
 		return false
 	case reflect.String:
-		return strings.Contains(val.(string), s)
+		return strings.Contains(val.(string), v.required)
 	default:
 		panic(fmt.Sprintf("contains validator can only validate strings, arrays, slices and maps, not %T", val))
 	}
 }
 
 // Type returns the constraint name (contains).
-func (ContainsValidator) Type() string {
+func (v *ContainsValidator) Type() string {
 	return "contains"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (ContainsValidator) FailureMsg() string {
-	return "Must contain a specific string."
+func (v *ContainsValidator) FailureMsg() string {
+	return fmt.Sprintf("must contain %q.", v.required)
 }
 
 // InSetValidator tests a value is in a set.
-type InSetValidator struct{}
+type InSetValidator struct {
+	set string
+}
 
 // Validate tests for a value within a set of values.
 // Returns true if val is a string or int within the set specified in params.
 // Validate panics if val is not a string or int.
-func (InSetValidator) Validate(val interface{}, params []string) bool {
+func (v *InSetValidator) Validate(val interface{}, params []string) bool {
 
+	v.set = strings.Join(params, ", ")
 	switch reflect.TypeOf(val).Kind() {
 	case reflect.String:
 		for _, p := range params {
@@ -830,13 +920,13 @@ func (InSetValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (inset).
-func (InSetValidator) Type() string {
+func (v *InSetValidator) Type() string {
 	return "inset"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (InSetValidator) FailureMsg() string {
-	return "Must be in the permitted set."
+func (v *InSetValidator) FailureMsg() string {
+	return fmt.Sprintf("must be in the set [%s].", v.set)
 }
 
 // NotEmptyValidator tests for an empty String, Array, Slice or Map.
@@ -846,7 +936,7 @@ type NotEmptyValidator struct{}
 // Returns true if val is String, Array, Slice or Map with elements.
 // Equivlent to (and shorthand for) minlen(1).
 // Validate panics if val is not a String, Array, Slice or Map.
-func (NotEmptyValidator) Validate(val interface{}, params []string) bool {
+func (v *NotEmptyValidator) Validate(val interface{}, params []string) bool {
 	switch reflect.TypeOf(val).Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
 		return reflect.ValueOf(val).Len() > 0
@@ -856,13 +946,13 @@ func (NotEmptyValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (notempty).
-func (NotEmptyValidator) Type() string {
+func (v *NotEmptyValidator) Type() string {
 	return "notempty"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (NotEmptyValidator) FailureMsg() string {
-	return "Must not be empty."
+func (v *NotEmptyValidator) FailureMsg() string {
+	return "must not be empty."
 }
 
 // NotZeroValidator tests for a value of zero.
@@ -871,7 +961,7 @@ type NotZeroValidator struct{}
 // Validate tests for a numerical value of zero.
 // Returns true if val is a number not equal to zero.
 // Validate panics if val is not a number.
-func (NotZeroValidator) Validate(val interface{}, params []string) bool {
+func (v *NotZeroValidator) Validate(val interface{}, params []string) bool {
 	number, ok := normalizeNumber(val)
 	if !ok {
 		panic(fmt.Sprintf("notzero validator can only validate numbers not, %T", val))
@@ -889,13 +979,13 @@ func (NotZeroValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (notzero).
-func (NotZeroValidator) Type() string {
+func (v *NotZeroValidator) Type() string {
 	return "notzero"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (NotZeroValidator) FailureMsg() string {
-	return "Must not be zero."
+func (v *NotZeroValidator) FailureMsg() string {
+	return "must not be zero."
 }
 
 // NotNilValidator tests for an uninitialized map or slice, or nil pointer.
@@ -904,7 +994,7 @@ type NotNilValidator struct{}
 // Validate tests for an uninitialized map or slice, or nil pointer.
 // Returns true if val is an initialized map or slice, or non-nil pointer.
 // Validate panics if val is not a map, slice or pointer.
-func (NotNilValidator) Validate(val interface{}, params []string) bool {
+func (v *NotNilValidator) Validate(val interface{}, params []string) bool {
 	switch reflect.TypeOf(val).Kind() {
 	case reflect.Ptr, reflect.Slice, reflect.Map:
 		return reflect.ValueOf(val).Pointer() != 0
@@ -915,13 +1005,41 @@ func (NotNilValidator) Validate(val interface{}, params []string) bool {
 }
 
 // Type returns the constraint name (notnil).
-func (NotNilValidator) Type() string {
+func (v *NotNilValidator) Type() string {
 	return "notnil"
 }
 
 // FailureMsg returns a string with a readable message about the validation failure.
-func (NotNilValidator) FailureMsg() string {
-	return "Must not be nil."
+func (v *NotNilValidator) FailureMsg() string {
+	return "must not be nil."
+}
+
+// EmailValidator tests for a valid email address
+type EmailValidator struct{}
+
+// Validate tests for an email address.
+// Returns true if val is an email address.
+// Validate panics if val is not a string.
+func (v *EmailValidator) Validate(val interface{}, params []string) bool {
+	s, ok := val.(string)
+	if !ok {
+		panic(fmt.Sprintf("email validator can only validate strings not, %T", val))
+	}
+	//re := regexp.MustCompile(`^(\w[-._\w]*\w@\w[-._\w]*\w\.\w{2,3})$`)
+	// use HTML5 email regex:
+	const exp = `^[a-zA-Z0-9.!#$%&’*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$`
+	re := regexp.MustCompile(exp)
+	return re.MatchString(s)
+}
+
+// Type returns the constraint name (email).
+func (v *EmailValidator) Type() string {
+	return "email"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (v *EmailValidator) FailureMsg() string {
+	return "must be a valid email address."
 }
 
 func normalizeNumber(i interface{}) (interface{}, bool) {
@@ -947,28 +1065,30 @@ func normalizeNumber(i interface{}) (interface{}, bool) {
 
 func getDefaultValidators() []Validator {
 	return []Validator{
-		EmptyValidator{},
-		Int32Validator{},
-		Int64Validator{},
-		AlphaValidator{},
-		DigitsValidator{},
-		Hex32Validator{},
-		Hex64Validator{},
-		HexValidator{},
-		UUIDValidator{},
-		AlphaNumValidator{},
-		PrefixValidator{},
-		SuffixValidator{},
-		MinValidator{},
-		MaxValidator{},
-		RangeValidator{},
-		LenMinValidator{},
-		LenMaxValidator{},
-		LenRangeValidator{},
-		ContainsValidator{},
-		InSetValidator{},
-		NotEmptyValidator{},
-		NotZeroValidator{},
-		NotNilValidator{},
+		&EmptyValidator{},
+		&Int32Validator{},
+		&Int64Validator{},
+		&AlphaValidator{},
+		&DigitsValidator{},
+		&Hex32Validator{},
+		&Hex64Validator{},
+		&HexValidator{},
+		&UUIDValidator{},
+		&AlphaNumValidator{},
+		&PrefixValidator{},
+		&SuffixValidator{},
+		&MinValidator{},
+		&MaxValidator{},
+		&RangeValidator{},
+		&LenMinValidator{},
+		&LenMaxValidator{},
+		&LenRangeValidator{},
+		&ContainsValidator{},
+		&InSetValidator{},
+		&NotEmptyValidator{},
+		&NotZeroValidator{},
+		&NotNilValidator{},
+		&SentenceValidator{},
+		&PhoneValidator{},
 	}
 }

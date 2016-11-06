@@ -53,8 +53,12 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 		}
 		value := rv.Field(i)
 		constraints := fieldType.Tag.Get("validate")
+		jsonName := strings.SplitAfterN(fieldType.Tag.Get("json"), ",", 2)[0]
+		if jsonName == "" {
+			jsonName = fieldType.Name
+		}
 
-		details, ok := mv.validateProperty(fieldType.Name, value, constraints)
+		details, ok := mv.validateProperty(fieldType.Name, jsonName, value, constraints)
 		if ok {
 			continue
 		}
@@ -72,7 +76,7 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 //  try using the pointer validator *alpha
 //
 //
-func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, constraints string) (map[string][]ValidationFailure, bool) {
+func (mv contextModelValidator) validateProperty(name string, msgName string, rv reflect.Value, constraints string) (map[string][]ValidationFailure, bool) {
 	results := make(map[string][]ValidationFailure)
 	tests := mv.validationHandler.ParseConstraints(constraints)
 	ignore := false
@@ -92,7 +96,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 			break
 		}
 		for k, v := range details {
-			results[name+"."+k] = v
+			results[msgName+"."+k] = v
 		}
 	case reflect.Ptr:
 		// Split constraints into ones targetted at the pointer itself
@@ -118,7 +122,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 		if len(ptrTests) > 0 {
 			fails, ok := mv.validationHandler.IsValid(rv.Interface(), ptrTests)
 			if !ok {
-				results[name] = fails
+				results[msgName] = fails
 			}
 		}
 
@@ -127,7 +131,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 			break
 		}
 		val := rv.Elem()
-		details, ok := mv.validateProperty(name, val, derefTests)
+		details, ok := mv.validateProperty(name, msgName, val, derefTests)
 		if ok {
 			break
 		}
@@ -140,7 +144,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 			// validate the array/slice "as a container" first
 			fails, ok := mv.validationHandler.IsValid(rv.Interface(), constraints)
 			if !ok {
-				results[name] = fails
+				results[msgName] = fails
 			}
 		}
 		// now validate each element, but only if they're structs and
@@ -162,7 +166,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 			// validate the map "as a container" first
 			fails, ok := mv.validationHandler.IsValid(rv.Interface(), constraints)
 			if !ok {
-				results[name] = fails
+				results[msgName] = fails
 			}
 		}
 		// now validate each element (value, not the key), but only
@@ -176,7 +180,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 				continue
 			}
 			for k, v := range details {
-				results[fmt.Sprintf("%s[%v].%s", name, key, k)] = v
+				results[fmt.Sprintf("%s[%v].%s", msgName, key, k)] = v
 			}
 		}
 
@@ -198,7 +202,7 @@ func (mv contextModelValidator) validateProperty(name string, rv reflect.Value, 
 		}
 		fails, ok := mv.validationHandler.IsValid(rv.Interface(), constraints)
 		if !ok {
-			results[name] = fails
+			results[msgName] = fails
 		}
 		//case reflect.Bool:
 	}

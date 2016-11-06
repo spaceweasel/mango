@@ -8,7 +8,7 @@ import (
 func TestEmptyValidatorHasEmptyStringType(t *testing.T) {
 	want := ""
 
-	v := EmptyValidator{}
+	v := &EmptyValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -19,7 +19,7 @@ func TestEmptyValidatorHasEmptyStringType(t *testing.T) {
 func TestEmptyValidatorFailureMessage(t *testing.T) {
 	want := ""
 
-	v := EmptyValidator{}
+	v := &EmptyValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -30,7 +30,7 @@ func TestEmptyValidatorFailureMessage(t *testing.T) {
 func TestEmptyValidatorReturnsTrueForAllInput(t *testing.T) {
 	want := true
 
-	v := EmptyValidator{}
+	v := &EmptyValidator{}
 	args := []string{}
 	got := v.Validate("mango", args)
 
@@ -43,7 +43,7 @@ func TestEmptyValidatorReturnsTrueForAllInput(t *testing.T) {
 func TestInt32ValidatorType(t *testing.T) {
 	want := "int32"
 
-	v := Int32Validator{}
+	v := &Int32Validator{}
 	got := v.Type()
 
 	if got != want {
@@ -52,9 +52,9 @@ func TestInt32ValidatorType(t *testing.T) {
 }
 
 func TestInt32ValidatorFailureMessage(t *testing.T) {
-	want := "Must be a 32 bit integer."
+	want := "must be a 32 bit integer."
 
-	v := Int32Validator{}
+	v := &Int32Validator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -77,7 +77,7 @@ func TestInt32Validator(t *testing.T) {
 		{"-2147483649", []string{}, false, "< MaxInt32"},
 	}
 
-	v := Int32Validator{}
+	v := &Int32Validator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -98,7 +98,7 @@ func TestInt32ValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := Int32Validator{}
+	v := &Int32Validator{}
 	v.Validate(32, []string{})
 }
 
@@ -106,7 +106,7 @@ func TestInt32ValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestInt64ValidatorType(t *testing.T) {
 	want := "int64"
 
-	v := Int64Validator{}
+	v := &Int64Validator{}
 	got := v.Type()
 
 	if got != want {
@@ -115,9 +115,9 @@ func TestInt64ValidatorType(t *testing.T) {
 }
 
 func TestInt64ValidatorFailureMessage(t *testing.T) {
-	want := "Must be a 64 bit integer."
+	want := "must be a 64 bit integer."
 
-	v := Int64Validator{}
+	v := &Int64Validator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -140,7 +140,7 @@ func TestInt64Validator(t *testing.T) {
 		{"-9223372036854775809", []string{}, false, "< MaxInt64"},
 	}
 
-	v := Int64Validator{}
+	v := &Int64Validator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -161,7 +161,7 @@ func TestInt64ValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := Int64Validator{}
+	v := &Int64Validator{}
 	v.Validate(32, []string{})
 }
 
@@ -169,7 +169,7 @@ func TestInt64ValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestAlphaValidatorType(t *testing.T) {
 	want := "alpha"
 
-	v := AlphaValidator{}
+	v := &AlphaValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -178,9 +178,9 @@ func TestAlphaValidatorType(t *testing.T) {
 }
 
 func TestAlphaValidatorFailureMessage(t *testing.T) {
-	want := "Must contain only alpha characters."
+	want := "must contain only alpha characters."
 
-	v := AlphaValidator{}
+	v := &AlphaValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -207,7 +207,7 @@ func TestAlphaValidator(t *testing.T) {
 		{"bdekja.skjdjhg.bjhgjhmnbmm.gjhfaksj", []string{}, false, "Periods"},
 	}
 
-	v := AlphaValidator{}
+	v := &AlphaValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -228,7 +228,7 @@ func TestAlphaValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := AlphaValidator{}
+	v := &AlphaValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -236,7 +236,7 @@ func TestAlphaValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestDigitsValidatorType(t *testing.T) {
 	want := "digits"
 
-	v := DigitsValidator{}
+	v := &DigitsValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -245,9 +245,9 @@ func TestDigitsValidatorType(t *testing.T) {
 }
 
 func TestDigitsValidatorFailureMessage(t *testing.T) {
-	want := "Must contain only digit characters."
+	want := "must contain only digit characters."
 
-	v := DigitsValidator{}
+	v := &DigitsValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -270,7 +270,7 @@ func TestDigitsValidator(t *testing.T) {
 		{"92337203 623372036854775337 2036807", []string{}, false, "Spaces"},
 	}
 
-	v := DigitsValidator{}
+	v := &DigitsValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -291,7 +291,7 @@ func TestDigitsValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := DigitsValidator{}
+	v := &DigitsValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -299,7 +299,7 @@ func TestDigitsValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestHex32ValidatorType(t *testing.T) {
 	want := "hex32"
 
-	v := Hex32Validator{}
+	v := &Hex32Validator{}
 	got := v.Type()
 
 	if got != want {
@@ -308,9 +308,9 @@ func TestHex32ValidatorType(t *testing.T) {
 }
 
 func TestHex32ValidatorFailureMessage(t *testing.T) {
-	want := "Must be a 32 bit hexadecimal value."
+	want := "must be a 32 bit hexadecimal value."
 
-	v := Hex32Validator{}
+	v := &Hex32Validator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -336,7 +336,7 @@ func TestHex32Validator(t *testing.T) {
 		{"-80000001", []string{}, false, "< MaxHex32"},
 	}
 
-	v := Hex32Validator{}
+	v := &Hex32Validator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -357,7 +357,7 @@ func TestHex32ValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := Hex32Validator{}
+	v := &Hex32Validator{}
 	v.Validate(32, []string{})
 }
 
@@ -365,7 +365,7 @@ func TestHex32ValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestHex64ValidatorType(t *testing.T) {
 	want := "hex64"
 
-	v := Hex64Validator{}
+	v := &Hex64Validator{}
 	got := v.Type()
 
 	if got != want {
@@ -373,9 +373,9 @@ func TestHex64ValidatorType(t *testing.T) {
 	}
 }
 func TestHex64ValidatorFailureMessage(t *testing.T) {
-	want := "Must be a 64 bit hexadecimal value."
+	want := "must be a 64 bit hexadecimal value."
 
-	v := Hex64Validator{}
+	v := &Hex64Validator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -400,7 +400,7 @@ func TestHex64Validator(t *testing.T) {
 		{"-8000000000000001", []string{}, false, "< MaxHex64"},
 	}
 
-	v := Hex64Validator{}
+	v := &Hex64Validator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -421,7 +421,7 @@ func TestHex64ValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := Hex64Validator{}
+	v := &Hex64Validator{}
 	v.Validate(32, []string{})
 }
 
@@ -429,7 +429,7 @@ func TestHex64ValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestHexValidatorType(t *testing.T) {
 	want := "hex"
 
-	v := HexValidator{}
+	v := &HexValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -437,9 +437,9 @@ func TestHexValidatorType(t *testing.T) {
 	}
 }
 func TestHexValidatorFailureMessage(t *testing.T) {
-	want := "Must contain only hexadecimal characters."
+	want := "must contain only hexadecimal characters."
 
-	v := HexValidator{}
+	v := &HexValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -468,7 +468,7 @@ func TestHexValidator(t *testing.T) {
 		{"aba.ffced.aefabda.fec", []string{}, false, "Periods"},
 	}
 
-	v := HexValidator{}
+	v := &HexValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -489,7 +489,7 @@ func TestHexValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := HexValidator{}
+	v := &HexValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -497,7 +497,7 @@ func TestHexValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestUUIDValidatorType(t *testing.T) {
 	want := "uuid"
 
-	v := UUIDValidator{}
+	v := &UUIDValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -505,9 +505,9 @@ func TestUUIDValidatorType(t *testing.T) {
 	}
 }
 func TestUUIDValidatorFailureMessage(t *testing.T) {
-	want := "Must be a valid UUID."
+	want := "must be a valid UUID."
 
-	v := UUIDValidator{}
+	v := &UUIDValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -542,7 +542,7 @@ func TestUUIDValidator(t *testing.T) {
 		{"(7a8ca1ea-b53b-4231-9260-d33f652f1ed9", []string{}, false, "Plain start "},
 	}
 
-	v := UUIDValidator{}
+	v := &UUIDValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -563,7 +563,7 @@ func TestUUIDValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := UUIDValidator{}
+	v := &UUIDValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -571,7 +571,7 @@ func TestUUIDValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestAlphaNumValidatorType(t *testing.T) {
 	want := "alphanum"
 
-	v := AlphaNumValidator{}
+	v := &AlphaNumValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -580,9 +580,9 @@ func TestAlphaNumValidatorType(t *testing.T) {
 }
 
 func TestAlphaNumValidatorFailureMessage(t *testing.T) {
-	want := "Must contain only alphanumeric characters."
+	want := "must contain only alphanumeric characters."
 
-	v := AlphaNumValidator{}
+	v := &AlphaNumValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -610,11 +610,11 @@ func TestAlphaNumValidator(t *testing.T) {
 		{"K3Has34.dasdKS.Ha75sda1d.adIASE4.8Wf7dsf", []string{}, false, "Periods"},
 	}
 
-	v := AlphaNumValidator{}
+	v := &AlphaNumValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
-			t.Errorf("Validate (%s): %q alphanum = %v, want %v", test.comment, test.input, got, test.want)
+			t.Errorf("Validate (%s): %q sentence = %v, want %v", test.comment, test.input, got, test.want)
 		}
 	}
 }
@@ -631,7 +631,152 @@ func TestAlphaNumValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := AlphaNumValidator{}
+	v := &AlphaNumValidator{}
+	v.Validate(32, []string{})
+}
+
+//sentence
+func TestSentenceValidatorType(t *testing.T) {
+	want := "sentence"
+
+	v := &SentenceValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestSentenceValidatorFailureMessage(t *testing.T) {
+	want := "must contain only characters found in a sentence."
+
+	v := &SentenceValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestSentenceValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"K3HAS34DASDKSHA75SDA1DADIASE48WF7DSF", []string{}, true, "Uppercase"},
+		{"k3has34dasdksha75sda1dadiase48wf7dsf", []string{}, true, "Lowercase"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "Mixedcase"},
+		{"KHasdasdKSDFHasdadadIASDEWQWfdsf", []string{}, true, "Alpha only"},
+		{"799766576435969875764448", []string{}, true, "Digits only"},
+		{"3A456DE63A456DE63A456DE6", []string{}, true, "Hex"},
+		{"K3Has 34dasdKSHa 75sda1da  dIASE 48Wf7dsf", []string{}, true, "Spaces"},
+		{"This _wont_ work", []string{}, false, "Underscores"},
+		{"He was semi-awake", []string{}, true, "Hyphens"},
+		{"Jeff walked quickly.", []string{}, true, "Periods"},
+		{"Jeff walked, quickly", []string{}, true, "Commas"},
+		{"Jeff walked quickly!", []string{}, true, "Exclamation"},
+		{"Did Jeff walked quickly?", []string{}, true, "Question"},
+		{"I can (normally)", []string{}, true, "Braces"},
+		{`Jeff's new bicycle`, []string{}, true, "SingleQuotes"},
+		{`I like "mushrooms"`, []string{}, true, "DoubleQuotes"},
+		{"Bicycle color: green", []string{}, true, "Colons"},
+		{"Jeff has a new bicycle; it is green.", []string{}, true, "Semicolons"},
+	}
+
+	v := &SentenceValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate (%s): %q sentence = %v, want %v", test.comment, test.input, got, test.want)
+		}
+	}
+}
+
+func TestSentenceValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "sentence validator can only validate strings not, int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := &SentenceValidator{}
+	v.Validate(32, []string{})
+}
+
+//phone
+func TestPhoneValidatorType(t *testing.T) {
+	want := "phone"
+
+	v := &PhoneValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestPhoneValidatorFailureMessage(t *testing.T) {
+	want := "must contain a telephone number."
+
+	v := &PhoneValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestPhoneValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"0123546789", []string{}, true, "AllDigits"},
+		{"01235 46789", []string{}, true, "TwoParts"},
+		{"01235 467 5689", []string{}, true, "ThreeParts"},
+		{"(1235) 467 5689", []string{}, true, "Braces"},
+		{"44 1235 467 5689", []string{}, false, "CountryWithoutPlus"},
+		{"+44 1235 467 5689", []string{}, true, "PlusCountry"},
+		{"+44 (1235) 467 5689", []string{}, true, "PlusCountryBraces"},
+		{"+4412354675689", []string{}, true, "Plus"},
+		{"+44(1235)4675689", []string{}, true, "BracesNoSpaces"},
+		{"Tel +44(1235)4675689", []string{}, false, "Alpha"},
+		{"Tel: +44(1235)4675689", []string{}, false, "Colons"},
+		{"44-1235-467-5689", []string{}, false, "Hyphens"},
+	}
+
+	v := &PhoneValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Logf("input: [%v]", test.input)
+			t.Errorf("Validate (%s): %q phone = %v, want %v", test.comment, test.input, got, test.want)
+		}
+	}
+}
+
+func TestPhoneValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "phone validator can only validate strings not, int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := &PhoneValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -639,7 +784,7 @@ func TestAlphaNumValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestPrefixValidatorType(t *testing.T) {
 	want := "prefix"
 
-	v := PrefixValidator{}
+	v := &PrefixValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -648,9 +793,9 @@ func TestPrefixValidatorType(t *testing.T) {
 }
 
 func TestPrefixValidatorFailureMessage(t *testing.T) {
-	want := "Must have the correct prefix."
+	want := `must have the prefix "cheese".`
 
-	v := PrefixValidator{}
+	v := &PrefixValidator{prefix: "cheese"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -680,7 +825,7 @@ func TestPrefixValidator(t *testing.T) {
 		{"CheeseBicycle", []string{}, true, "Empty"},
 	}
 
-	v := PrefixValidator{}
+	v := &PrefixValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -701,7 +846,7 @@ func TestPrefixValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := PrefixValidator{}
+	v := &PrefixValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -709,7 +854,7 @@ func TestPrefixValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestSuffixValidatorType(t *testing.T) {
 	want := "suffix"
 
-	v := SuffixValidator{}
+	v := &SuffixValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -718,9 +863,9 @@ func TestSuffixValidatorType(t *testing.T) {
 }
 
 func TestSuffixValidatorFailureMessage(t *testing.T) {
-	want := "Must have the correct suffix."
+	want := `must have the suffix "cheese".`
 
-	v := SuffixValidator{}
+	v := &SuffixValidator{suffix: "cheese"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -750,7 +895,7 @@ func TestSuffixValidator(t *testing.T) {
 		{"CheeseBicycle", []string{}, true, "Empty"},
 	}
 
-	v := SuffixValidator{}
+	v := &SuffixValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -771,7 +916,7 @@ func TestSuffixValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := SuffixValidator{}
+	v := &SuffixValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -779,7 +924,7 @@ func TestSuffixValidatorPanicsWhenInputNotString(t *testing.T) {
 func TestMinValidatorType(t *testing.T) {
 	want := "min"
 
-	v := MinValidator{}
+	v := &MinValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -787,9 +932,9 @@ func TestMinValidatorType(t *testing.T) {
 	}
 }
 func TestMinValidatorFailureMessage(t *testing.T) {
-	want := "Must not be less than the minimum permitted."
+	want := "must not be less than 6."
 
-	v := MinValidator{}
+	v := &MinValidator{min: "6"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -836,7 +981,7 @@ func TestMinValidator(t *testing.T) {
 		{float64(56.653), []string{"56.654"}, false, "float64 border"},
 	}
 
-	v := MinValidator{}
+	v := &MinValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -857,7 +1002,7 @@ func TestMinValidatorPanicsWhenInputNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MinValidator{}
+	v := &MinValidator{}
 	v.Validate("mango", []string{"3"})
 }
 
@@ -873,7 +1018,7 @@ func TestMinValidatorPanicsWhenParameterNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MinValidator{}
+	v := &MinValidator{}
 	v.Validate(345, []string{"mango"})
 }
 
@@ -889,7 +1034,7 @@ func TestMinValidatorPanicsWhenParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MinValidator{}
+	v := &MinValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -897,7 +1042,7 @@ func TestMinValidatorPanicsWhenParameterMissing(t *testing.T) {
 func TestMaxValidatorType(t *testing.T) {
 	want := "max"
 
-	v := MaxValidator{}
+	v := &MaxValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -905,9 +1050,9 @@ func TestMaxValidatorType(t *testing.T) {
 	}
 }
 func TestMaxValidatorFailureMessage(t *testing.T) {
-	want := "Must not be greater than the maximum permitted."
+	want := "must not be greater than 45."
 
-	v := MaxValidator{}
+	v := &MaxValidator{max: "45"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -953,7 +1098,7 @@ func TestMaxValidator(t *testing.T) {
 		{float64(56.655), []string{"56.654"}, false, "float64 border"},
 	}
 
-	v := MaxValidator{}
+	v := &MaxValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -974,7 +1119,7 @@ func TestMaxValidatorPanicsWhenInputNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MaxValidator{}
+	v := &MaxValidator{}
 	v.Validate("mango", []string{"3"})
 }
 
@@ -990,7 +1135,7 @@ func TestMaxValidatorPanicsWhenParameterNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MaxValidator{}
+	v := &MaxValidator{}
 	v.Validate(345, []string{"mango"})
 }
 
@@ -1006,7 +1151,7 @@ func TestMaxValidatorPanicsWhenParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := MaxValidator{}
+	v := &MaxValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -1014,7 +1159,7 @@ func TestMaxValidatorPanicsWhenParameterMissing(t *testing.T) {
 func TestRangeValidatorType(t *testing.T) {
 	want := "range"
 
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1022,9 +1167,9 @@ func TestRangeValidatorType(t *testing.T) {
 	}
 }
 func TestRangeValidatorFailureMessage(t *testing.T) {
-	want := "Must be within the permitted range."
+	want := "must be between 4 and 56."
 
-	v := RangeValidator{}
+	v := &RangeValidator{min: "4", max: "56"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1070,7 +1215,7 @@ func TestRangeValidator(t *testing.T) {
 		{float64(341.456), []string{"56.654", "341.456"}, true, "float64 upper limit"},
 	}
 
-	v := RangeValidator{}
+	v := &RangeValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1091,7 +1236,7 @@ func TestRangeValidatorPanicsWhenInputNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate("mango", []string{"3"})
 }
 
@@ -1107,7 +1252,7 @@ func TestRangeValidatorPanicsWhenSingleParameterNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(345, []string{"mango", "999"})
 }
 
@@ -1123,7 +1268,7 @@ func TestRangeValidatorPanicsWhenBothParametersNotNumbers(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(345, []string{"mango", "cheese"})
 }
 
@@ -1139,7 +1284,7 @@ func TestRangeValidatorPanicsWhenValIsUintAndSingleParameterNotNumber(t *testing
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(uint(345), []string{"mango", "999"})
 }
 
@@ -1155,7 +1300,7 @@ func TestRangeValidatorPanicsWhenValIsFloatAndSingleParameterNotNumber(t *testin
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(345.756, []string{"mango", "999"})
 }
 
@@ -1171,7 +1316,7 @@ func TestRangeValidatorPanicsWhenOneParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(345, []string{"2"})
 }
 
@@ -1187,7 +1332,7 @@ func TestRangeValidatorPanicsWhenBothParametersMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := RangeValidator{}
+	v := &RangeValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -1195,7 +1340,7 @@ func TestRangeValidatorPanicsWhenBothParametersMissing(t *testing.T) {
 func TestLenMinValidatorType(t *testing.T) {
 	want := "lenmin"
 
-	v := LenMinValidator{}
+	v := &LenMinValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1203,9 +1348,9 @@ func TestLenMinValidatorType(t *testing.T) {
 	}
 }
 func TestLenMinValidatorFailureMessage(t *testing.T) {
-	want := "Must not contain fewer elements than minimum permitted."
+	want := "must contain at least 3 elements."
 
-	v := LenMinValidator{}
+	v := &LenMinValidator{min: "3"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1233,7 +1378,7 @@ func TestLenMinValidator(t *testing.T) {
 		{map[int]string{1: "a", 2: "b", 3: "c"}, []string{"3"}, true, "map limit"},
 	}
 
-	v := LenMinValidator{}
+	v := &LenMinValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1254,7 +1399,7 @@ func TestLenMinValidatorPanicsWhenInputNotStringArraySliceOrMap(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMinValidator{}
+	v := &LenMinValidator{}
 	v.Validate(76554, []string{"3"})
 }
 
@@ -1270,7 +1415,7 @@ func TestLenMinValidatorPanicsWhenParameterNotInteger(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMinValidator{}
+	v := &LenMinValidator{}
 	v.Validate(345, []string{"22.4"})
 }
 
@@ -1286,7 +1431,7 @@ func TestLenMinValidatorPanicsWhenParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMinValidator{}
+	v := &LenMinValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -1294,7 +1439,7 @@ func TestLenMinValidatorPanicsWhenParameterMissing(t *testing.T) {
 func TestLenMaxValidatorType(t *testing.T) {
 	want := "lenmax"
 
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1302,9 +1447,9 @@ func TestLenMaxValidatorType(t *testing.T) {
 	}
 }
 func TestLenMaxValidatorFailureMessage(t *testing.T) {
-	want := "Must not contain more elements than the maximum permitted."
+	want := "must not contain more than 5 elements."
 
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{max: "5"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1332,7 +1477,7 @@ func TestLenMaxValidator(t *testing.T) {
 		{map[int]string{1: "a", 2: "b", 3: "c"}, []string{"3"}, true, "map limit"},
 	}
 
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1353,7 +1498,7 @@ func TestLenMaxValidatorPanicsWhenInputNotStringArraySliceOrMap(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{}
 	v.Validate(76554, []string{"3"})
 }
 
@@ -1369,7 +1514,7 @@ func TestLenMaxValidatorPanicsWhenParameterNotInteger(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{}
 	v.Validate(345, []string{"34.6"})
 }
 
@@ -1385,7 +1530,7 @@ func TestLenMaxValidatorPanicsWhenParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenMaxValidator{}
+	v := &LenMaxValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -1393,7 +1538,7 @@ func TestLenMaxValidatorPanicsWhenParameterMissing(t *testing.T) {
 func TestLenRangeValidatorType(t *testing.T) {
 	want := "lenrange"
 
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1401,9 +1546,9 @@ func TestLenRangeValidatorType(t *testing.T) {
 	}
 }
 func TestLenRangeValidatorFailureMessage(t *testing.T) {
-	want := "Must have a quantity of elements within the permitted range."
+	want := "must contain between 45 and 100 elements."
 
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{min: "45", max: "100"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1439,7 +1584,7 @@ func TestLenRangeValidator(t *testing.T) {
 		{map[int]string{1: "a", 2: "b", 3: "c"}, []string{"3", "9"}, true, "map lower limit"},
 	}
 
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1460,7 +1605,7 @@ func TestLenRangeValidatorPanicsWhenInputNotStringArraySliceOrMap(t *testing.T) 
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	v.Validate(76554, []string{"3", "3000"})
 }
 
@@ -1476,7 +1621,7 @@ func TestLenRangeValidatorPanicsWhenOneParameterNotInteger(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	v.Validate(345, []string{"34.6", "22"})
 }
 
@@ -1492,7 +1637,7 @@ func TestLenRangeValidatorPanicsWhenBothParametersNotInteger(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	v.Validate(345, []string{"34.6", "11.45"})
 }
 
@@ -1508,7 +1653,7 @@ func TestLenRangeValidatorPanicsWhenOneParameterMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	v.Validate(345, []string{"34"})
 }
 
@@ -1524,7 +1669,7 @@ func TestLenRangeValidatorPanicsWhenBothParametersMissing(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := LenRangeValidator{}
+	v := &LenRangeValidator{}
 	v.Validate(345, []string{})
 }
 
@@ -1532,7 +1677,7 @@ func TestLenRangeValidatorPanicsWhenBothParametersMissing(t *testing.T) {
 func TestContainValidatorType(t *testing.T) {
 	want := "contains"
 
-	v := ContainsValidator{}
+	v := &ContainsValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1541,9 +1686,9 @@ func TestContainValidatorType(t *testing.T) {
 }
 
 func TestContainsValidatorFailureMessage(t *testing.T) {
-	want := "Must contain a specific string."
+	want := `must contain "onions".`
 
-	v := ContainsValidator{}
+	v := &ContainsValidator{required: "onions"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1599,7 +1744,7 @@ func TestContainsValidator(t *testing.T) {
 		{map[*string]int{&a: 1, &b: 2, &c: 3}, []string{"3"}, true, "pointer map"},
 	}
 
-	v := ContainsValidator{}
+	v := &ContainsValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1620,7 +1765,7 @@ func TestContainsValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := ContainsValidator{}
+	v := &ContainsValidator{}
 	v.Validate(32, []string{})
 }
 
@@ -1636,7 +1781,7 @@ func TestContainsValidatorPanicsWhenInputNotSliceString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := ContainsValidator{}
+	v := &ContainsValidator{}
 	v.Validate([]int{1, 2, 3, 4, 5}, []string{"3"})
 }
 
@@ -1652,7 +1797,7 @@ func TestContainsValidatorPanicsWhenInputNotMapStringKey(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := ContainsValidator{}
+	v := &ContainsValidator{}
 	v.Validate(map[int]string{1: "1", 2: "2", 3: "3", 4: "4", 5: "5"}, []string{"3"})
 }
 
@@ -1660,7 +1805,7 @@ func TestContainsValidatorPanicsWhenInputNotMapStringKey(t *testing.T) {
 func TestInSetValidatorType(t *testing.T) {
 	want := "inset"
 
-	v := InSetValidator{}
+	v := &InSetValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1669,9 +1814,9 @@ func TestInSetValidatorType(t *testing.T) {
 }
 
 func TestInSetValidatorFailureMessage(t *testing.T) {
-	want := "Must be in the permitted set."
+	want := "must be in the set [egg, cheese, bacon]."
 
-	v := InSetValidator{}
+	v := &InSetValidator{set: "egg, cheese, bacon"}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1698,7 +1843,7 @@ func TestInSetValidator(t *testing.T) {
 		{2, []string{"1", " 2 ", "3"}, true, "Whitespace"},
 	}
 
-	v := InSetValidator{}
+	v := &InSetValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1719,7 +1864,7 @@ func TestInSetValidatorPanicsWhenInputNotString(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := InSetValidator{}
+	v := &InSetValidator{}
 	v.Validate(32.6, []string{"45", "67"})
 }
 
@@ -1735,7 +1880,7 @@ func TestInSetValidatorPanicsWhenInputIsIntAndParamsAreNotInts(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := InSetValidator{}
+	v := &InSetValidator{}
 	v.Validate(32, []string{"45", "67", "45.7"})
 }
 
@@ -1743,7 +1888,7 @@ func TestInSetValidatorPanicsWhenInputIsIntAndParamsAreNotInts(t *testing.T) {
 func TestNotEmptyValidatorType(t *testing.T) {
 	want := "notempty"
 
-	v := NotEmptyValidator{}
+	v := &NotEmptyValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1751,9 +1896,9 @@ func TestNotEmptyValidatorType(t *testing.T) {
 	}
 }
 func TestNotEmptyValidatorFailureMessage(t *testing.T) {
-	want := "Must not be empty."
+	want := "must not be empty."
 
-	v := NotEmptyValidator{}
+	v := &NotEmptyValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1777,7 +1922,7 @@ func TestNotEmptyValidator(t *testing.T) {
 		{map[int]string{1: "a", 2: "b", 3: "c"}, []string{}, true, "map"},
 	}
 
-	v := NotEmptyValidator{}
+	v := &NotEmptyValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1798,7 +1943,7 @@ func TestNotEmptyValidatorPanicsWhenInputNotStringArraySliceOrMap(t *testing.T) 
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := NotEmptyValidator{}
+	v := &NotEmptyValidator{}
 	v.Validate(76554, []string{})
 }
 
@@ -1806,7 +1951,7 @@ func TestNotEmptyValidatorPanicsWhenInputNotStringArraySliceOrMap(t *testing.T) 
 func TestNotZeroValidatorType(t *testing.T) {
 	want := "notzero"
 
-	v := NotZeroValidator{}
+	v := &NotZeroValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1814,9 +1959,9 @@ func TestNotZeroValidatorType(t *testing.T) {
 	}
 }
 func TestNotZeroValidatorFailureMessage(t *testing.T) {
-	want := "Must not be zero."
+	want := "must not be zero."
 
-	v := NotZeroValidator{}
+	v := &NotZeroValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1860,7 +2005,7 @@ func TestNotZeroValidator(t *testing.T) {
 		{float64(0.0000000001), []string{}, true, "float64 border"},
 	}
 
-	v := NotZeroValidator{}
+	v := &NotZeroValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1881,7 +2026,7 @@ func TestNotZeroValidatorPanicsWhenInputNotNumber(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := NotZeroValidator{}
+	v := &NotZeroValidator{}
 	v.Validate("mango", []string{"3"})
 }
 
@@ -1889,7 +2034,7 @@ func TestNotZeroValidatorPanicsWhenInputNotNumber(t *testing.T) {
 func TestNotNilValidatorType(t *testing.T) {
 	want := "notnil"
 
-	v := NotNilValidator{}
+	v := &NotNilValidator{}
 	got := v.Type()
 
 	if got != want {
@@ -1897,9 +2042,9 @@ func TestNotNilValidatorType(t *testing.T) {
 	}
 }
 func TestNotNilValidatorFailureMessage(t *testing.T) {
-	want := "Must not be nil."
+	want := "must not be nil."
 
-	v := NotNilValidator{}
+	v := &NotNilValidator{}
 	got := v.FailureMsg()
 
 	if got != want {
@@ -1950,7 +2095,7 @@ func TestNotNilValidator(t *testing.T) {
 		{inSl, []string{}, true, "initialized slice"},
 	}
 
-	v := NotNilValidator{}
+	v := &NotNilValidator{}
 
 	for _, test := range tests {
 		if got := v.Validate(test.input, test.args); got != test.want {
@@ -1971,8 +2116,77 @@ func TestNotNilValidatorPanicsWhenInputNotPointer(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	v := NotNilValidator{}
+	v := &NotNilValidator{}
 	v.Validate("sdfsdf", []string{})
+}
+
+//email
+func TestEmailValidatorType(t *testing.T) {
+	want := "email"
+
+	v := &EmailValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestEmailValidatorFailureMessage(t *testing.T) {
+	want := "must be a valid email address."
+
+	v := &EmailValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestEmailValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"bob@example.com", []string{}, true, "Standard"},
+		{"bob@example", []string{}, true, "NoTLD"},
+		{"@example.com", []string{}, false, "NoUser"},
+		{"BOB@EXAMPLE.COM", []string{}, true, "Uppercase"},
+		{"bob@", []string{}, false, "NoDomain"},
+		{"bobexample.com", []string{}, false, "No@"},
+		{"bob@test_example.com", []string{}, false, "UnderscoresDomain"},
+		{"bob_blue@example.com", []string{}, true, "UnderscoresName"},
+		{"bob@test-example.com", []string{}, true, "HyphensDomain"},
+		{"bob-blue@example.com", []string{}, true, "HyphensName"},
+		{"bob@my.test.example.com", []string{}, true, "MultipartDomain"},
+		{"bob.blue@example.com", []string{}, true, "QualifiedName"},
+	}
+
+	v := &EmailValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate (%s): %q email = %v, want %v", test.comment, test.input, got, test.want)
+		}
+	}
+}
+
+func TestEmailValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "email validator can only validate strings not, int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := &EmailValidator{}
+	v.Validate(32, []string{})
 }
 
 // ********************
@@ -2016,7 +2230,7 @@ func TestAddValidatorsAddsToCollection(t *testing.T) {
 
 	pv := elementValidationHandler{}
 	pv.validators = make(map[string]Validator)
-	v := []Validator{EmptyValidator{}, testValidator1{}, testValidator2{}}
+	v := []Validator{&EmptyValidator{}, &testValidator1{}, &testValidator2{}}
 	pv.AddValidators(v)
 
 	got := len(pv.validators)
