@@ -1090,5 +1090,6 @@ func getDefaultValidators() []Validator {
 		&NotNilValidator{},
 		&SentenceValidator{},
 		&PhoneValidator{},
+		&EmailValidator{},
 	}
 }
