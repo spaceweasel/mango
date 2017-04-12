@@ -30,7 +30,7 @@ type Decoder interface {
 
 // EncoderEngine is the interface for the encoder/decoder management.
 type EncoderEngine interface {
-	GetDecoder(r io.ReadCloser, ct string) (Decoder, error)
+	GetDecoder(r io.Reader, ct string) (Decoder, error)
 	GetEncoder(w io.Writer, ct string) (Encoder, error)
 	DefaultMediaType() string
 	SetDefaultMediaType(mt string)
@@ -43,8 +43,8 @@ type EncoderEngine interface {
 type EncoderFunc func(io.Writer) Encoder
 
 // DecoderFunc is a function that returns a Decoder pre-injected
-// with an io.ReadCloser
-type DecoderFunc func(io.ReadCloser) Decoder
+// with an io.Reader
+type DecoderFunc func(io.Reader) Decoder
 
 type encoderEngine struct {
 	Encoders         map[string]EncoderFunc
@@ -75,11 +75,11 @@ func (e *encoderEngine) AddDecoderFunc(ct string, fn DecoderFunc) error {
 }
 
 // GetDecoder returns a Decoder for the specified content-type (ct). The
-// decoder will have the supplied io.ReadCloser pre-injected, so decoding
+// decoder will have the supplied io.Reader pre-injected, so decoding
 // simply requires calling the Decode method, supplying the target model
 // as the only parameter.
 // If no suitable decoder can be found, then an error will be returned.
-func (e *encoderEngine) GetDecoder(r io.ReadCloser, ct string) (Decoder, error) {
+func (e *encoderEngine) GetDecoder(r io.Reader, ct string) (Decoder, error) {
 	f, ok := e.Decoders[ct]
 	if !ok {
 		return nil, fmt.Errorf("no decoder for content-type: %v", ct)
@@ -118,10 +118,10 @@ func newEncoderEngine() *encoderEngine {
 	e.Encoders = make(map[string]EncoderFunc)
 	e.Decoders = make(map[string]DecoderFunc)
 
-	e.Decoders["application/json"] = func(r io.ReadCloser) Decoder {
+	e.Decoders["application/json"] = func(r io.Reader) Decoder {
 		return json.NewDecoder(r)
 	}
-	e.Decoders["application/xml"] = func(r io.ReadCloser) Decoder {
+	e.Decoders["application/xml"] = func(r io.Reader) Decoder {
 		return xml.NewDecoder(r)
 	}
 	e.Encoders["application/json"] = func(w io.Writer) Encoder {
