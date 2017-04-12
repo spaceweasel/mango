@@ -2,6 +2,7 @@ package mango
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -220,7 +221,7 @@ func TestAuthenticatedReturnsFalseWhenNoIdentity(t *testing.T) {
 }
 
 func TestContentDecoderReturnsErrorIfNoDecoderBasedOnContentType(t *testing.T) {
-	want := "no decoder for content-type: test/mango"
+	want := "unsupported media type (Content-Type: test/mango)"
 	ee := &mockEncoderEngine{}
 	req, _ := http.NewRequest("POST", "someurl", nil)
 	req.Header.Set("Content-Type", "test/mango")
@@ -228,7 +229,7 @@ func TestContentDecoderReturnsErrorIfNoDecoderBasedOnContentType(t *testing.T) {
 		Request:       req,
 		encoderEngine: ee,
 	}
-	_, err := c.contentDecoder()
+	_, err := c.contentDecoder(req.Body)
 
 	got := err.Error()
 	if got != want {
@@ -245,7 +246,7 @@ func TestContentDecoderReturnsNoErrorIfDecoderExistsForContentType(t *testing.T)
 		Request:       req,
 		encoderEngine: ee,
 	}
-	_, err := c.contentDecoder()
+	_, err := c.contentDecoder(req.Body)
 
 	got := err
 	if got != want {
@@ -262,7 +263,7 @@ func TestContentDecoderReturnsDecoderBasedOnContentType(t *testing.T) {
 		Request:       req,
 		encoderEngine: ee,
 	}
-	decoder, _ := c.contentDecoder()
+	decoder, _ := c.contentDecoder(req.Body)
 
 	got := reflect.TypeOf(decoder).Name()
 	if got != want {
@@ -279,7 +280,7 @@ func TestContentDecoderCanReturnDecoderIgnoringContentTypeParameters(t *testing.
 		Request:       req,
 		encoderEngine: ee,
 	}
-	decoder, _ := c.contentDecoder()
+	decoder, _ := c.contentDecoder(req.Body)
 
 	got := reflect.TypeOf(decoder).Name()
 	if got != want {
@@ -287,8 +288,8 @@ func TestContentDecoderCanReturnDecoderIgnoringContentTypeParameters(t *testing.
 	}
 }
 
-func TestBindReturnsErrorIfNoSuitableDecoder(t *testing.T) {
-	want := "unable to bind: no decoder for content-type: test/mango"
+func TestBindReturnsErrorWhenNoSuitableDecoder(t *testing.T) {
+	want := "unsupported media type (Content-Type: test/mango)"
 	ee := &mockEncoderEngine{}
 	req, _ := http.NewRequest("POST", "someurl", nil)
 	req.Header.Set("Content-Type", "test/mango")
@@ -305,8 +306,8 @@ func TestBindReturnsErrorIfNoSuitableDecoder(t *testing.T) {
 	}
 }
 
-func TestBindReturnsErrorIfDecodingError(t *testing.T) {
-	want := "unable to bind: incorrect interface type, expected string"
+func TestBindReturnsErrorWhenDecodingError(t *testing.T) {
+	want := "incorrect interface type, expected string"
 	ee := &mockEncoderEngine{}
 	json := `{"id":34,"name":"Mango"}`
 	req, _ := http.NewRequest("POST", "someurl", bytes.NewBufferString(json))
@@ -325,7 +326,45 @@ func TestBindReturnsErrorIfDecodingError(t *testing.T) {
 	}
 }
 
-func TestBindReturnsNoErrorIfBindingSucceeds(t *testing.T) {
+func TestBindReturnsErrorWhenMalformedPayload(t *testing.T) {
+
+	type model struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+
+	var tests = []struct {
+		json string
+		want string
+	}{
+		{`{"id":34,"name":"Mango"`, "unexpected EOF"},
+		{`{"id":34,"name":"Mango}`, "unexpected EOF"},
+		{`{"id":34,"name""Mango"}`, `invalid character '"' after object key`},
+		{`{"id":34"name":"Mango"}`, `invalid character '"' after object key:value pair`},
+	}
+
+	for _, test := range tests {
+
+		req, _ := http.NewRequest("POST", "someurl", bytes.NewBufferString(test.json))
+		req.Header.Set("Content-Type", "application/json")
+		c := Context{
+			Request:       req,
+			encoderEngine: newEncoderEngine(),
+		}
+		m := &model{}
+		err := c.Bind(m)
+		if err == nil {
+			t.Errorf("Input (%s): error got <nil>, want %q", test.json, test.want)
+			continue
+		}
+		if got := err.Error(); got != test.want {
+			t.Errorf("Input (%s): error got %q, want %q", test.json, got, test.want)
+		}
+	}
+
+}
+
+func TestBindReturnsNoErrorWhenBindingSucceeds(t *testing.T) {
 	want := error(nil)
 	ee := &mockEncoderEngine{}
 	json := `{"id":34,"name":"Mango"}`
@@ -385,6 +424,54 @@ func TestBindingWithJsonBodyAndContentTypeWithParameter(t *testing.T) {
 	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.Id)
 	if got != want {
 		t.Errorf("Bind() = %q, want %q", got, want)
+	}
+}
+
+func TestBindingWithZippedJsonBody(t *testing.T) {
+	want := "Mango-34"
+	json := `{"id":34,"name":"Mango"}`
+
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	gz.Write([]byte(json))
+	gz.Close()
+
+	r, _ := http.NewRequest("POST", "someurl", bytes.NewReader(b.Bytes()))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Content-Encoding", "gzip")
+	c := Context{
+		Request:       r,
+		encoderEngine: newEncoderEngine(),
+	}
+	type data struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	decoded := data{}
+	c.Bind(&decoded)
+
+	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.ID)
+	if got != want {
+		t.Errorf("Bind() = %q, want %q", got, want)
+	}
+}
+
+func TestBindReturnsErrorWhenUnknownContentEncoding(t *testing.T) {
+	want := "unsupported media type (Content-Encoding: squash)"
+	ee := &mockEncoderEngine{}
+	req, _ := http.NewRequest("POST", "someurl", nil)
+	req.Header.Set("Content-Type", "test/mango")
+	req.Header.Set("Content-Encoding", "squash")
+	c := Context{
+		Request:       req,
+		encoderEngine: ee,
+	}
+	m := ""
+	err := c.Bind(&m)
+
+	got := err.Error()
+	if got != want {
+		t.Errorf("Error = %q, want %q", got, want)
 	}
 }
 

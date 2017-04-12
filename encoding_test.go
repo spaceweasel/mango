@@ -67,7 +67,7 @@ func TestNewEncoderCreatesDecodersMap(t *testing.T) {
 		}
 	}()
 	ee := newEncoderEngine()
-	ee.Decoders["test"] = func(r io.ReadCloser) Decoder {
+	ee.Decoders["test"] = func(r io.Reader) Decoder {
 		return nil
 	}
 }
@@ -121,7 +121,7 @@ func NewMockEncoder(w io.Writer) Encoder {
 func TestGetDecoderReturnsNoErrorWhenDecoderFound(t *testing.T) {
 	want := error(nil)
 	ee := newEncoderEngine()
-	ee.Decoders["test"] = func(r io.ReadCloser) Decoder {
+	ee.Decoders["test"] = func(r io.Reader) Decoder {
 		return nil
 	}
 	_, err := ee.GetDecoder(nil, "test")
@@ -135,9 +135,9 @@ func TestGetDecoderReturnsDecoderFuncWithReader(t *testing.T) {
 	want := "to be decoded"
 	ee := newEncoderEngine()
 
-	ee.Decoders["test"] = func(r io.ReadCloser) Decoder { return NewMockDecoder(r) }
+	ee.Decoders["test"] = func(r io.Reader) Decoder { return NewMockDecoder(r) }
 
-	r := nopCloser{bytes.NewBufferString("to be decoded")}
+	r := bytes.NewBufferString("to be decoded")
 
 	dec, _ := ee.GetDecoder(r, "test")
 	decoded := new(string)
@@ -148,14 +148,8 @@ func TestGetDecoderReturnsDecoderFuncWithReader(t *testing.T) {
 	}
 }
 
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
-
 type mockDecoder struct {
-	r io.ReadCloser
+	r io.Reader
 }
 
 func (m mockDecoder) Decode(i interface{}) error {
@@ -169,7 +163,7 @@ func (m mockDecoder) Decode(i interface{}) error {
 	return nil
 }
 
-func NewMockDecoder(r io.ReadCloser) Decoder {
+func NewMockDecoder(r io.Reader) Decoder {
 	return mockDecoder{r: r}
 }
 
@@ -179,7 +173,7 @@ type mockEncoderEngine struct {
 	defaultMediaType string
 }
 
-func (e *mockEncoderEngine) GetDecoder(r io.ReadCloser, ct string) (Decoder, error) {
+func (e *mockEncoderEngine) GetDecoder(r io.Reader, ct string) (Decoder, error) {
 	if ct == "test/test" {
 		d := NewMockDecoder(r)
 		return d, nil
@@ -251,7 +245,7 @@ func TestGetDecoderReturnsJsonDecoderFuncWhenContentTypeApplicationJson(t *testi
 		Name string `json:"name"`
 	}
 
-	r := nopCloser{bytes.NewBufferString(`{"id":34,"name":"Mango"}`)}
+	r := bytes.NewBufferString(`{"id":34,"name":"Mango"}`)
 
 	dec, _ := ee.GetDecoder(r, "application/json")
 	decoded := data{}
@@ -290,7 +284,7 @@ func TestGetDecoderReturnsXmlDecoderFuncWhenContentTypeApplicationXml(t *testing
 		Name string `xml:"name"`
 	}
 
-	r := nopCloser{bytes.NewBufferString(`<data><id>34</id><name>Mango</name></data>`)}
+	r := bytes.NewBufferString(`<data><id>34</id><name>Mango</name></data>`)
 
 	dec, _ := ee.GetDecoder(r, "application/xml")
 	decoded := data{}
@@ -373,7 +367,7 @@ func TestAddEncoderFuncAddsToInternalMap(t *testing.T) {
 
 func TestAddDecoderFuncAddsFunctionWithoutError(t *testing.T) {
 	want := error(nil)
-	fn := func(io.ReadCloser) Decoder {
+	fn := func(io.Reader) Decoder {
 		return nil
 	}
 	ee := newEncoderEngine()
@@ -386,7 +380,7 @@ func TestAddDecoderFuncAddsFunctionWithoutError(t *testing.T) {
 
 func TestAddDecoderFuncReturnsErrorWhenConflictingContentType(t *testing.T) {
 	want := "conflicts with existing decoder for content-type: application/json"
-	fn := func(io.ReadCloser) Decoder {
+	fn := func(io.Reader) Decoder {
 		return nil
 	}
 	ee := newEncoderEngine()
@@ -399,13 +393,13 @@ func TestAddDecoderFuncReturnsErrorWhenConflictingContentType(t *testing.T) {
 
 func TestAddDecoderFuncAddsToInternalMap(t *testing.T) {
 	want := "to be decoded"
-	fn := func(r io.ReadCloser) Decoder {
+	fn := func(r io.Reader) Decoder {
 		return NewMockDecoder(r)
 	}
 	ee := newEncoderEngine()
 	ee.AddDecoderFunc("mango/json", fn)
 
-	r := nopCloser{bytes.NewBufferString("to be decoded")}
+	r := bytes.NewBufferString("to be decoded")
 
 	dec, err := ee.GetDecoder(r, "mango/json")
 	if err != nil {
