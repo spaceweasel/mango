@@ -295,6 +295,128 @@ func TestValidateIntegerModelWithErrorReturnsDetailsInMap(t *testing.T) {
 	}
 }
 
+func TestValidateModelWithSimpleJsonTagsReturnsTagNameInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name string `json:"name" validate:"alpha"`
+		Age  int    `json:"age" validate:"max(67)"`
+	}{
+		"Mango", 9876,
+	}
+
+	details, _ := validator.Validate(&test)
+
+	want := "max(67)"
+
+	fails, ok := details["age"]
+	if !ok {
+		t.Errorf("'age' not in map")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateModelWithComplexJsonTagsReturnsTagNameInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+	test := struct {
+		Name string `json:"name,omitempty" validate:"alpha"`
+		Age  int    `json:"age,omitempty" validate:"max(67)"`
+	}{
+		"Mango", 9876,
+	}
+
+	details, _ := validator.Validate(&test)
+
+	want := "max(67)"
+
+	fails, ok := details["age"]
+	if !ok {
+		t.Errorf("'age' not in map")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateNestedModelWithComplexJsonTagsReturnsTagNameInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+
+	type nested struct {
+		Name string `json:"name,omitempty" validate:"alpha"`
+		Age  int    `json:"age,omitempty" validate:"max(67)"`
+	}
+
+	type outer struct {
+		Person nested `json:"person, omitempty"`
+	}
+
+	test := outer{
+		Person: nested{"Mango", 9876},
+	}
+
+	details, _ := validator.Validate(&test)
+
+	want := "max(67)"
+
+	fails, ok := details["person.age"]
+	if !ok {
+		t.Errorf("'person.age' not in map")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
+func TestValidateCollectionModelWithComplexJsonTagsReturnsTagNameInMap(t *testing.T) {
+	validator := contextModelValidator{
+		validationHandler: newValidationHandler(),
+	}
+
+	type nested struct {
+		Name string `json:"name,omitempty" validate:"alpha"`
+		Age  int    `json:"age,omitempty" validate:"max(67)"`
+	}
+
+	type outer struct {
+		Persons []nested `json:"persons, omitempty"`
+	}
+
+	test := outer{
+		Persons: []nested{{"Mango", 9876}},
+	}
+
+	details, _ := validator.Validate(&test)
+
+	want := "max(67)"
+
+	fails, ok := details["persons[0].age"]
+	if !ok {
+		t.Errorf("'age' not in map")
+		return
+	}
+	got := fails[0].Code
+
+	if got != want {
+		t.Errorf("Validate error = %q, want %q", got, want)
+	}
+}
+
 func TestValidateUint8ModelWithErrorReturnsDetailsInMap(t *testing.T) {
 	validator := contextModelValidator{
 		validationHandler: newValidationHandler(),

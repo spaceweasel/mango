@@ -53,7 +53,7 @@ func (mv contextModelValidator) Validate(m interface{}) (map[string][]Validation
 		}
 		value := rv.Field(i)
 		constraints := fieldType.Tag.Get("validate")
-		jsonName := strings.SplitAfterN(fieldType.Tag.Get("json"), ",", 2)[0]
+		jsonName := strings.SplitN(fieldType.Tag.Get("json"), ",", 2)[0]
 		if jsonName == "" {
 			jsonName = fieldType.Name
 		}
@@ -158,7 +158,7 @@ func (mv contextModelValidator) validateProperty(name string, msgName string, rv
 				continue
 			}
 			for k, v := range details {
-				results[fmt.Sprintf("%s[%d].%s", name, i, k)] = v
+				results[fmt.Sprintf("%s[%d].%s", msgName, i, k)] = v
 			}
 		}
 	case reflect.Map:
