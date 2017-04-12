@@ -1,6 +1,7 @@
 package mango
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -160,15 +161,22 @@ func (c *Context) Redirect(urlStr string, code int) {
 // 	fmt.Fprintf(c.Writer, "")
 // }
 
-func (c *Context) contentDecoder() (Decoder, error) {
+func (c *Context) contentDecoder(r io.Reader) (Decoder, error) {
 	ct := c.Request.Header.Get("Content-Type")
 	ct = strings.Replace(ct, " ", "", -1)
-	decoder, err := c.encoderEngine.GetDecoder(c.Request.Body, ct)
+	decoder, err := c.encoderEngine.GetDecoder(r, ct)
 	if err != nil {
 		// If the full Content-Type doesn't match try matching only up to the ;
-		decoder, err = c.encoderEngine.GetDecoder(c.Request.Body, strings.Split(ct, ";")[0])
+		decoder, err = c.encoderEngine.GetDecoder(r, strings.Split(ct, ";")[0])
 	}
-	return decoder, err
+	if err != nil {
+		return nil,
+			UnsupportedMediaTypeError{
+				hdr: "Content-Type",
+				val: ct,
+			}
+	}
+	return decoder, nil
 }
 
 func (c *Context) acceptableMediaTypes() []string {
@@ -235,13 +243,29 @@ func (c *Context) GetEncoder() (Encoder, string, error) {
 // This method is under review - currently Binding only uses deserialized
 // request body content.
 func (c *Context) Bind(m interface{}) error {
-	decoder, err := c.contentDecoder()
+	var err error
+	r := c.Request.Body
+	ce := c.Request.Header.Get("Content-Encoding")
+	if strings.ToLower(ce) == "gzip" {
+		r, err = gzip.NewReader(c.Request.Body)
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+	} else if ce != "" {
+		return UnsupportedMediaTypeError{
+			hdr: "Content-Encoding",
+			val: ce,
+		}
+	}
+
+	decoder, err := c.contentDecoder(r)
 	if err != nil {
-		return fmt.Errorf("unable to bind: %v", err)
+		return err
 	}
 	err = decoder.Decode(m)
 	if err != nil {
-		return fmt.Errorf("unable to bind: %v", err)
+		return err
 	}
 
 	// TODO: now update any missing empty properties from url path/query params
@@ -249,7 +273,19 @@ func (c *Context) Bind(m interface{}) error {
 	return nil
 }
 
-// Validate validates the properties of the model m
+// Validate validates the properties of the model m.
 func (c *Context) Validate(m interface{}) (map[string][]ValidationFailure, bool) {
 	return c.modelValidator.Validate(m)
+}
+
+// UnsupportedMediaTypeError means that the request payload was not in an
+// acceptable format. This error occurs if the header value for either
+// 'content-type' or 'content-encoding' is not recognised.
+type UnsupportedMediaTypeError struct {
+	hdr string
+	val string
+}
+
+func (e UnsupportedMediaTypeError) Error() string {
+	return fmt.Sprintf("unsupported media type (%s: %s)", e.hdr, e.val)
 }
