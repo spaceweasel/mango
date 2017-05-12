@@ -462,7 +462,7 @@ func (v *SentenceValidator) FailureMsg() string {
 type NotWhitespaceValidator struct{}
 
 // Validate tests for whitespace.
-// Returns true if val is a string containing only whitespace characters.
+// Returns true if val is not a string containing only whitespace characters.
 // Validate panics if val is not a string.
 func (v *NotWhitespaceValidator) Validate(val interface{}, params []string) bool {
 	s, ok := val.(string)
@@ -470,7 +470,7 @@ func (v *NotWhitespaceValidator) Validate(val interface{}, params []string) bool
 		panic(fmt.Sprintf("notwhitespace validator can only validate strings not, %T", val))
 	}
 
-	return len(strings.Fields(s)) > 0
+	return len(s) == 0 || len(strings.Fields(s)) > 0
 }
 
 // Type returns the constraint name (notwhitespace).
@@ -480,7 +480,32 @@ func (v *NotWhitespaceValidator) Type() string {
 
 // FailureMsg returns a string with a readable message about the validation failure.
 func (v *NotWhitespaceValidator) FailureMsg() string {
-	return "must contain non-whitespace characters."
+	return "must not contain only whitespace characters."
+}
+
+// NotEmptyOrWhitespaceValidator tests that a string is not empty and does not comprise only whitespace characters.
+type NotEmptyOrWhitespaceValidator struct{}
+
+// Validate tests for whitespace or empty string.
+// Returns true if val is not an empty string or a string containing only whitespace characters.
+// Validate panics if val is not a string.
+func (v *NotEmptyOrWhitespaceValidator) Validate(val interface{}, params []string) bool {
+	s, ok := val.(string)
+	if !ok {
+		panic(fmt.Sprintf("notemptyorwhitespace validator can only validate strings not, %T", val))
+	}
+
+	return len(strings.Fields(s)) > 0
+}
+
+// Type returns the constraint name (notemptyorwhitespace).
+func (v *NotEmptyOrWhitespaceValidator) Type() string {
+	return "notemptyorwhitespace"
+}
+
+// FailureMsg returns a string with a readable message about the validation failure.
+func (v *NotEmptyOrWhitespaceValidator) FailureMsg() string {
+	return "must contain at least one non-whitespace character."
 }
 
 // PhoneValidator tests for a telephone number.
@@ -1117,5 +1142,6 @@ func getDefaultValidators() []Validator {
 		&PhoneValidator{},
 		&EmailValidator{},
 		&NotWhitespaceValidator{},
+		&NotEmptyOrWhitespaceValidator{},
 	}
 }

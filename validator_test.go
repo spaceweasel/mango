@@ -723,7 +723,7 @@ func TestNotWhitespaceValidatorType(t *testing.T) {
 }
 
 func TestNotWhitespaceValidatorFailureMessage(t *testing.T) {
-	want := "must contain non-whitespace characters."
+	want := "must not contain only whitespace characters."
 
 	v := &NotWhitespaceValidator{}
 	got := v.FailureMsg()
@@ -746,6 +746,7 @@ func TestNotWhitespaceValidator(t *testing.T) {
 		{"KHasdasdKSDFHasdadadIASDEWQWfdsf", []string{}, true, "Alpha only"},
 		{"799766576435969875764448", []string{}, true, "Digits only"},
 		{"3A456DE63A456DE63A456DE6", []string{}, true, "Hex"},
+		{"", []string{}, true, "Empty"},
 
 		{"      ", []string{}, false, "Spaces"},
 		{"K3Has 34dasdKSHa 75sda1da  dIASE 48Wf7dsf", []string{}, true, "InternalSpaces"},
@@ -789,6 +790,89 @@ func TestNotWhitespaceValidatorPanicsWhenInputNotString(t *testing.T) {
 		}
 	}()
 	v := &NotWhitespaceValidator{}
+	v.Validate(32, []string{})
+}
+
+//notemptyorwhitespace
+func TestNotEmptyOrWhitespaceValidatorType(t *testing.T) {
+	want := "notemptyorwhitespace"
+
+	v := &NotEmptyOrWhitespaceValidator{}
+	got := v.Type()
+
+	if got != want {
+		t.Errorf("Valid = %q, want %q", got, want)
+	}
+}
+
+func TestNotEmptyOrWhitespaceValidatorFailureMessage(t *testing.T) {
+	want := "must contain at least one non-whitespace character."
+
+	v := &NotEmptyOrWhitespaceValidator{}
+	got := v.FailureMsg()
+
+	if got != want {
+		t.Errorf("Message = %q, want %q", got, want)
+	}
+}
+
+func TestNotEmptyOrWhitespaceValidator(t *testing.T) {
+	var tests = []struct {
+		input   string
+		args    []string
+		want    bool
+		comment string
+	}{
+		{"K3HAS34DASDKSHA75SDA1DADIASE48WF7DSF", []string{}, true, "Uppercase"},
+		{"k3has34dasdksha75sda1dadiase48wf7dsf", []string{}, true, "Lowercase"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "Mixedcase"},
+		{"KHasdasdKSDFHasdadadIASDEWQWfdsf", []string{}, true, "Alpha only"},
+		{"799766576435969875764448", []string{}, true, "Digits only"},
+		{"3A456DE63A456DE63A456DE6", []string{}, true, "Hex"},
+		{"", []string{}, false, "Empty"},
+
+		{"      ", []string{}, false, "Spaces"},
+		{"K3Has 34dasdKSHa 75sda1da  dIASE 48Wf7dsf", []string{}, true, "InternalSpaces"},
+		{"   K3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "LeadingSpaces"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf   ", []string{}, true, "TrailingSpaces"},
+		{"\t\t\t\t", []string{}, false, "Tabs"},
+		{"K3Has\t34dasdKSHa\t75sda1da\t\tdIASE\t48Wf7dsf", []string{}, true, "InternalTabs"},
+		{"\t\t\tK3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "LeadingTabs"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf\t\t\t", []string{}, true, "TrailingTabs"},
+		{"\r\r\r\r", []string{}, false, "CRs"},
+		{"K3Has\r34dasdKSHa\r75sda1da\r\rdIASE\r48Wf7dsf", []string{}, true, "InternalCRs"},
+		{"\r\r\rK3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "LeadingCRs"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf\r\r\r", []string{}, true, "TrailingCRs"},
+		{"\n\n\n\n", []string{}, false, "LFs"},
+		{"K3Has\n34dasdKSHa\n75sda1da\n\ndIASE\n48Wf7dsf", []string{}, true, "InternalLFs"},
+		{"\n\n\nK3Has34dasdKSHa75sda1dadIASE48Wf7dsf", []string{}, true, "LeadingLFs"},
+		{"K3Has34dasdKSHa75sda1dadIASE48Wf7dsf\n\n\n", []string{}, true, "TrailingLFs"},
+
+		{" \t\r\n \t\r\n \t\r\n \t\r\n", []string{}, false, "SpaceTabCRLF"},
+	}
+
+	v := &NotEmptyOrWhitespaceValidator{}
+
+	for _, test := range tests {
+		if got := v.Validate(test.input, test.args); got != test.want {
+			t.Errorf("Validate (%s): %q notemptyorwhitespace = %v, want %v", test.comment, test.input, got, test.want)
+		}
+	}
+}
+
+func TestNotEmptyOrWhitespaceValidatorPanicsWhenInputNotString(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			want := "notemptyorwhitespace validator can only validate strings not, int"
+			got := r
+			if got != want {
+				t.Errorf("Error message = %q, want %q", got, want)
+			}
+		} else {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	v := &NotEmptyOrWhitespaceValidator{}
 	v.Validate(32, []string{})
 }
 
