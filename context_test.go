@@ -456,6 +456,35 @@ func TestBindingWithZippedJsonBody(t *testing.T) {
 	}
 }
 
+func TestBindingWithZippedJsonBodyAndCustomContentEncodingHeader(t *testing.T) {
+	want := "Mango-34"
+	json := `{"id":34,"name":"Mango"}`
+
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	gz.Write([]byte(json))
+	gz.Close()
+
+	r, _ := http.NewRequest("POST", "someurl", bytes.NewReader(b.Bytes()))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("X-Content-Encoding", "gzip")
+	c := Context{
+		Request:       r,
+		encoderEngine: newEncoderEngine(),
+	}
+	type data struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	decoded := data{}
+	c.Bind(&decoded)
+
+	got := fmt.Sprintf("%s-%d", decoded.Name, decoded.ID)
+	if got != want {
+		t.Errorf("Bind() = %q, want %q", got, want)
+	}
+}
+
 func TestBindReturnsErrorWhenUnknownContentEncoding(t *testing.T) {
 	want := "unsupported media type (Content-Encoding: squash)"
 	ee := &mockEncoderEngine{}

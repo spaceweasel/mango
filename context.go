@@ -243,20 +243,17 @@ func (c *Context) GetEncoder() (Encoder, string, error) {
 // This method is under review - currently Binding only uses deserialized
 // request body content.
 func (c *Context) Bind(m interface{}) error {
-	var err error
 	r := c.Request.Body
-	ce := c.Request.Header.Get("Content-Encoding")
-	if strings.ToLower(ce) == "gzip" {
+	ce, err := c.contentEncoding()
+	if err != nil {
+		return err
+	}
+	if ce == "gzip" {
 		r, err = gzip.NewReader(c.Request.Body)
 		if err != nil {
 			return err
 		}
 		defer r.Close()
-	} else if ce != "" {
-		return UnsupportedMediaTypeError{
-			hdr: "Content-Encoding",
-			val: ce,
-		}
 	}
 
 	decoder, err := c.contentDecoder(r)
@@ -271,6 +268,24 @@ func (c *Context) Bind(m interface{}) error {
 	// TODO: now update any missing empty properties from url path/query params
 
 	return nil
+}
+
+func (c *Context) contentEncoding() (string, error) {
+	ce := c.Request.Header.Get("Content-Encoding")
+	if ce == "" {
+		// Some proxies (e.g. Zuul) strip the 'content-encoding'
+		// header, so check for custom style variety, 'X-...'
+		ce = c.Request.Header.Get("X-Content-Encoding")
+	}
+	ce = strings.ToLower(ce)
+	acceptable := []string{"", "gzip"}
+	if !stringInSlice(ce, acceptable) {
+		return "", UnsupportedMediaTypeError{
+			hdr: "Content-Encoding",
+			val: ce,
+		}
+	}
+	return ce, nil
 }
 
 // Validate validates the properties of the model m.
